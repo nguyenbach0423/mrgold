@@ -22,7 +22,6 @@ COPY --chown=bot:bot --from=builder /bot/mrgold /bot/mrgold
 
 USER bot
 
-ENV PORT=2000
 EXPOSE 2000
 
 ENTRYPOINT ["./mrgold"]
