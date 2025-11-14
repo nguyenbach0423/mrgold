@@ -578,6 +578,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	content["text"] = goldPriceBoard.Display()
 	go sendMessage(content)
+
+	go sendAnswerCallbackQuery(map[string]interface{}{
+		"callback_query_id": id,
+		"text":              "Đã gửi giá vàng cho bạn.",
+		"show_alert":        true,
+	})
 }
 
 func getClientIP(r *http.Request) string {
@@ -603,6 +609,17 @@ func sendMessage(v interface{}) {
 	}
 
 	doRequest(http.MethodPost, config.TelegramBotBaseURL+"/sendMessage", nil, reqBody)
+}
+
+func sendAnswerCallbackQuery(v interface{}) {
+	reqBody, err := json.Marshal(v)
+
+	if err != nil {
+		log.Error().Err(err).Send()
+		return
+	}
+
+	doRequest(http.MethodPost, config.TelegramBotBaseURL+"/answerCallbackQuery", nil, reqBody)
 }
 
 func doRequest(method, baseURL string, params map[string]string, reqBody []byte) ([]byte, bool) {
