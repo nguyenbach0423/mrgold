@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -596,8 +595,6 @@ func getClientIP(r *http.Request) string {
 }
 
 func sendMessage(v interface{}) {
-	fmt.Println("-----", v)
-
 	reqBody, err := json.Marshal(v)
 
 	if err != nil {
@@ -633,6 +630,7 @@ func doRequest(method, baseURL string, params map[string]string, reqBody []byte)
 
 	req.Header.Add("User-Agent", userAgent)
 	req.Header.Add("Accept", "application/json")
+	req.Header.Add("Content-Type", "application/json")
 
 	client := &http.Client{
 		Timeout: 5 * time.Second,
