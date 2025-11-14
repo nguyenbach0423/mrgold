@@ -22,6 +22,6 @@ COPY --chown=bot:bot --from=builder /bot/mrgold /bot/mrgold
 
 USER bot
 
-EXPOSE 8080
+EXPOSE 2000
 
 ENTRYPOINT ["./mrgold"]
