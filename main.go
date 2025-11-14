@@ -46,7 +46,7 @@ func main() {
 
 	_, ok := doRequest(http.MethodPost, config.TelegramBotBaseURL+"/setWebhook", map[string]string{
 		"url": config.PublicDomain + "/webhook",
-	})
+	}, nil)
 	if !ok {
 		os.Exit(1)
 	}
@@ -200,7 +200,7 @@ func (gpb *GoldPriceBoard) Display() string {
 }
 
 func crawlSJC() {
-	resp, ok := doRequest(http.MethodGet, "https://sjc.com.vn/GoldPrice/Services/PriceService.ashx", nil)
+	resp, ok := doRequest(http.MethodGet, "https://sjc.com.vn/GoldPrice/Services/PriceService.ashx", nil, nil)
 
 	if ok {
 		var goldPriceBoard struct {
@@ -248,7 +248,7 @@ func crawlSJC() {
 func crawlDOJI() {
 	resp, ok := doRequest(http.MethodGet, "https://giavang.doji.vn/", map[string]string{
 		"q": "doji/get/json/gia_vang_quoc_te",
-	})
+	}, nil)
 
 	resp = bytes.TrimPrefix(resp, []byte("\xef\xbb\xbf"))
 	resp = bytes.ReplaceAll(resp, []byte(`\x3c`), []byte("<"))
@@ -302,7 +302,7 @@ func crawlDOJI() {
 func crawlPNJ() {
 	resp, ok := doRequest(http.MethodGet, "https://edge-api.pnj.io/ecom-frontend/v1/get-gold-price", map[string]string{
 		"zone": "11",
-	})
+	}, nil)
 
 	if ok {
 		var goldPriceBoard struct {
@@ -494,6 +494,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			} `json:"chat"`
 			Text string `json:"text"`
 		} `json:"message"`
+		CallbackQuery struct {
+			From struct {
+				Id int `json:"id"`
+			} `json:"from"`
+			Data string `json:"data"`
+		} `json:"callback_query"`
 	}
 
 	if err = json.Unmarshal(body, &payload); err != nil {
@@ -503,13 +509,61 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id := strconv.Itoa(payload.Message.Chat.Id)
-	text := strings.ToLower(strings.TrimSpace(payload.Message.Text))
+	id := ""
+	text := ""
+
+	if payload.Message.Chat.Id != 0 {
+		id = strconv.Itoa(payload.Message.Chat.Id)
+		text = strings.ToLower(strings.TrimSpace(payload.Message.Text))
+	} else if payload.CallbackQuery.From.Id != 0 {
+		id = strconv.Itoa(payload.CallbackQuery.From.Id)
+		text = payload.CallbackQuery.Data
+	}
 
 	var pattern = regexp.MustCompile("(?i)^/gold\\s+(SJC|PNJ|DOJI|BTMC|BTMH)$")
 
+	content := map[string]interface{}{
+		"chat_id":    id,
+		"parse_mode": "HTML",
+	}
+
 	if text == "" || !pattern.MatchString(text) {
-		go sendMessage(id, "Vui lòng chọn một trong các thương hiệu sau:\n<code><b>/gold SJC</b></code> | <code><b>/gold DOJI</b></code> | <code><b>/gold PNJ</b></code> | <code><b>/gold BTMC</b></code> | <code><b>/gold BTMH</b></code>")
+		content["text"] = "<b>Vui lòng chọn một trong các thương hiệu sau:</b>\n<code><b>/gold SJC</b></code> | <code><b>/gold DOJI</b></code> | <code><b>/gold PNJ</b></code> | <code><b>/gold BTMC</b></code> | <code><b>/gold BTMH</b></code>"
+		content["reply_markup"] = map[string]interface{}{
+			"inline_keyboard": []interface{}{
+				[]interface{}{
+					map[string]interface{}{
+						"text":          "SJC",
+						"callback_data": "/gold SJC",
+					},
+				},
+				[]interface{}{
+					map[string]interface{}{
+						"text":          "DOJI",
+						"callback_data": "/gold DOJI",
+					},
+				},
+				[]interface{}{
+					map[string]interface{}{
+						"text":          "PNJ",
+						"callback_data": "/gold PNJ",
+					},
+				},
+				[]interface{}{
+					map[string]interface{}{
+						"text":          "Bảo Tín Minh Châu",
+						"callback_data": "/gold BTMC",
+					},
+				},
+				[]interface{}{
+					map[string]interface{}{
+						"text":          "Bảo Tín Mạnh Hải",
+						"callback_data": "/gold BTMH",
+					},
+				},
+			},
+		}
+		go sendMessage(content)
 		return
 	}
 
@@ -517,11 +571,13 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	goldPriceBoard, exist := goldPriceBoards[symbol]
 	if !exist {
-		go sendMessage(id, "Giá vàng hiện chưa được cập nhật. Vui lòng thử lại trong giây lát.")
+		content["text"] = "Giá vàng hiện chưa được cập nhật. Vui lòng thử lại trong giây lát."
+		go sendMessage(content)
 		return
 	}
 
-	go sendMessage(id, goldPriceBoard.Display())
+	content["text"] = goldPriceBoard.Display()
+	go sendMessage(content)
 }
 
 func getClientIP(r *http.Request) string {
@@ -538,20 +594,24 @@ func getClientIP(r *http.Request) string {
 	return ip
 }
 
-func sendMessage(id, text string) {
-	if text == "" {
+func sendMessage(v interface{}) {
+	reqBody, err := json.Marshal(v)
+
+	if err != nil {
+		log.Error().Err(err).Send()
 		return
 	}
 
-	doRequest(http.MethodPost, config.TelegramBotBaseURL+"/sendMessage", map[string]string{
-		"chat_id":    id,
-		"text":       text,
-		"parse_mode": "HTML",
-	})
+	doRequest(http.MethodPost, config.TelegramBotBaseURL+"/sendMessage", nil, reqBody)
 }
 
-func doRequest(method, baseURL string, params map[string]string) ([]byte, bool) {
+func doRequest(method, baseURL string, params map[string]string, reqBody []byte) ([]byte, bool) {
 	var err error
+
+	var r io.Reader
+	if reqBody != nil && len(reqBody) > 0 {
+		r = bytes.NewReader(reqBody)
+	}
 
 	queryParams := url.Values{}
 
@@ -562,7 +622,7 @@ func doRequest(method, baseURL string, params map[string]string) ([]byte, bool) 
 	requestURL := baseURL + "?" + queryParams.Encode()
 
 	var req *http.Request
-	req, err = http.NewRequest(method, requestURL, nil)
+	req, err = http.NewRequest(method, requestURL, r)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, false
@@ -586,8 +646,8 @@ func doRequest(method, baseURL string, params map[string]string) ([]byte, bool) 
 		_ = resp.Body.Close()
 	}()
 
-	var body []byte
-	body, err = io.ReadAll(resp.Body)
+	var respBody []byte
+	respBody, err = io.ReadAll(resp.Body)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, false
@@ -599,11 +659,11 @@ func doRequest(method, baseURL string, params map[string]string) ([]byte, bool) 
 			Str("endpoint", req.URL.Path).
 			Str("query", req.URL.RawQuery).
 			Str("status", resp.Status).
-			Str("response", string(body)).
+			Str("response", string(respBody)).
 			Send()
 
-		return body, false
+		return respBody, false
 	}
 
-	return body, true
+	return respBody, true
 }
