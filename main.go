@@ -522,8 +522,6 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		go sendAnswerCallbackQuery(map[string]interface{}{
 			"callback_query_id": payload.CallbackQuery.Id,
-			"text":              "Đã gửi giá vàng cho bạn.",
-			"show_alert":        false,
 		})
 	}
 
