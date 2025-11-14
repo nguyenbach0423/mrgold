@@ -528,7 +528,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if text == "" || !pattern.MatchString(text) {
-		content["text"] = "<b>Vui lòng chọn một trong các thương hiệu sau:</b>\n<code><b>/gold SJC</b></code> | <code><b>/gold DOJI</b></code> | <code><b>/gold PNJ</b></code> | <code><b>/gold BTMC</b></code> | <code><b>/gold BTMH</b></code>"
+		content["text"] = "<b>Vui lòng chọn một trong các thương hiệu sau:</b>"
 		content["reply_markup"] = map[string]interface{}{
 			"inline_keyboard": []interface{}{
 				[]interface{}{
