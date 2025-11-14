@@ -495,6 +495,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			Text string `json:"text"`
 		} `json:"message"`
 		CallbackQuery struct {
+			Id   string `json:"id"`
 			From struct {
 				Id int `json:"id"`
 			} `json:"from"`
@@ -518,6 +519,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	} else if payload.CallbackQuery.From.Id != 0 {
 		id = strconv.Itoa(payload.CallbackQuery.From.Id)
 		text = payload.CallbackQuery.Data
+
+		go sendAnswerCallbackQuery(map[string]interface{}{
+			"callback_query_id": payload.CallbackQuery.Id,
+			"text":              "Đã gửi giá vàng cho bạn.",
+			"show_alert":        true,
+		})
 	}
 
 	var pattern = regexp.MustCompile("(?i)^/gold\\s+(SJC|PNJ|DOJI|BTMC|BTMH)$")
@@ -578,12 +585,6 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	content["text"] = goldPriceBoard.Display()
 	go sendMessage(content)
-
-	go sendAnswerCallbackQuery(map[string]interface{}{
-		"callback_query_id": id,
-		"text":              "Đã gửi giá vàng cho bạn.",
-		"show_alert":        true,
-	})
 }
 
 func getClientIP(r *http.Request) string {
