@@ -1,7 +1,5 @@
 .idea/
 
-go.sum
-
 docker-compose.yml
 
 fly.toml
