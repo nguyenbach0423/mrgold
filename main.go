@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -595,6 +596,8 @@ func getClientIP(r *http.Request) string {
 }
 
 func sendMessage(v interface{}) {
+	fmt.Println("-----", v)
+
 	reqBody, err := json.Marshal(v)
 
 	if err != nil {
