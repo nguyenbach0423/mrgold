@@ -111,6 +111,8 @@ func main() {
 		}
 	}()
 
+	log.Info().Msg("server is listening on port " + config.Port)
+
 	s := http.Server{
 		Addr:    ":" + config.Port,
 		Handler: &Handler{},
