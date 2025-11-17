@@ -488,13 +488,13 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Send()
 
 	var payload struct {
-		Message struct {
+		Message *struct {
 			Chat struct {
 				Id int `json:"id"`
 			} `json:"chat"`
 			Text string `json:"text"`
 		} `json:"message"`
-		CallbackQuery struct {
+		CallbackQuery *struct {
 			Id   string `json:"id"`
 			From struct {
 				Id int `json:"id"`
@@ -510,19 +510,27 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	chatId := 0
 	id := ""
 	text := ""
 
 	if payload.Message.Chat.Id != 0 {
+		chatId = payload.Message.Chat.Id
 		id = strconv.Itoa(payload.Message.Chat.Id)
 		text = strings.ToLower(strings.TrimSpace(payload.Message.Text))
 	} else if payload.CallbackQuery.From.Id != 0 {
+		chatId = payload.CallbackQuery.From.Id
 		id = strconv.Itoa(payload.CallbackQuery.From.Id)
 		text = payload.CallbackQuery.Data
 
 		go sendAnswerCallbackQuery(map[string]interface{}{
 			"callback_query_id": payload.CallbackQuery.Id,
 		})
+	}
+
+	if text == "/start" {
+		go sendMessage(newGoldBranchOptions(chatId))
+		return
 	}
 
 	var pattern = regexp.MustCompile("(?i)^/gold\\s+(SJC|PNJ|DOJI|BTMC|BTMH)$")
@@ -683,4 +691,68 @@ func doRequest(method, baseURL string, params map[string]string, reqBody []byte)
 	}
 
 	return respBody, true
+}
+
+func newGoldBranchOptions(id int) map[string]interface{} {
+	return map[string]interface{}{
+		"chat_id":    id,
+		"parse_mode": "HTML",
+		"text":       "<b>Vui lòng chọn thương hiệu trong danh sách sau:</b>",
+		"reply_markup": map[string]interface{}{
+			"inline_keyboard": []interface{}{
+				[]interface{}{
+					map[string]interface{}{
+						"text":          "SJC",
+						"callback_data": "/next GoldPriceBoard SJC",
+					},
+					map[string]interface{}{
+						"text":          "DOJI",
+						"callback_data": "/next GoldPriceBoard DOJI",
+					},
+					map[string]interface{}{
+						"text":          "PNJ",
+						"callback_data": "/next GoldPriceBoard PNJ",
+					},
+				},
+				[]interface{}{
+					map[string]interface{}{
+						"text":          "Bảo Tín Minh Châu",
+						"callback_data": "/next GoldPriceBoard BTMC",
+					},
+					map[string]interface{}{
+						"text":          "Bảo Tín Mạnh Hải",
+						"callback_data": "/next GoldPriceBoard BTMH",
+					},
+				},
+			},
+		},
+	}
+}
+
+func newGoldPriceBoard(id int, branch string) map[string]interface{} {
+	builder := strings.Builder{}
+
+	builder.WriteString("<b>Bảng giá vàng tại Bảo Tín Mạnh Hải:</b>\n")
+	builder.WriteString("\n")
+	builder.WriteString("🔶Nhẫn ép vỉ Kim Gia Bảo - Mua: 14.800.000 - Bán: 15.100.000\n")
+	builder.WriteString("🔶Nhẫn ép vỉ Kim Gia Bảo - Mua: 14.800.000 - Bán: 15.100.000\n")
+	builder.WriteString("🔶Nhẫn ép vỉ Kim Gia Bảo - Mua: 14.800.000 - Bán: 15.100.000\n")
+	builder.WriteString("\n")
+	builder.WriteString("<i>(Cập nhật lúc: 18:00:00 18/11/2025 - Đơn vị tính: đồng/chỉ)</i>")
+
+	return map[string]interface{}{
+		"chat_id":    id,
+		"parse_mode": "HTML",
+		"text":       builder.String(),
+		"reply_markup": map[string]interface{}{
+			"inline_keyboard": []interface{}{
+				[]interface{}{
+					map[string]interface{}{
+						"text":          "<< Quay lại danh sách thương hiệu",
+						"callback_data": "/return GoldBranchOptions",
+					},
+				},
+			},
+		},
+	}
 }
