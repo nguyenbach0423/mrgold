@@ -309,8 +309,8 @@ func crawlPNJ() {
 			Data []struct {
 				Code      string `json:"masp"`
 				Name      string `json:"tensp"`
-				BuyPrice  int    `json:"giaban"`
-				SellPrice int    `json:"giamua"`
+				BuyPrice  int    `json:"giamua"`
+				SellPrice int    `json:"giaban"`
 			} `json:"data"`
 			Branch    string `json:"chinhanh"`
 			UpdatedAt string `json:"updateDate"`
