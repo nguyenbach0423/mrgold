@@ -195,7 +195,7 @@ func loadIntro(extras map[string]interface{}) map[string]interface{} {
 	builder.WriteString("<b>Tiện ích</b>\n")
 	builder.WriteString("\n")
 	builder.WriteString("<code><b>/menu pin</b></code> - <i>ghim menu để thao tác nhanh</i>\n")
-	builder.WriteString("<code><b>/menu unpin</b></code> - <i>gỡ menu khi không cần</i>\n")
+	builder.WriteString("<code><b>/menu unpin</b></code> - <i>gỡ menu khi không cần thiết</i>\n")
 	builder.WriteString("\n")
 	builder.WriteString("<b>Hãy ra lệnh cho tôi!</b>\n")
 
