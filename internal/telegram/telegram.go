@@ -87,6 +87,12 @@ func (c *Client) sendMessage(command string, extras map[string]interface{}) {
 			log.Error().Err(err).Send()
 			return
 		}
+	} else if command == "/gold alert" || command == "/gold history" || command == "/feedback" || command == "/donate" {
+		reqBody, err = json.Marshal(loadComingSoon(extras))
+		if err != nil {
+			log.Error().Err(err).Send()
+			return
+		}
 	} else {
 		reqBody, err = json.Marshal(loadIntro(extras))
 		if err != nil {
@@ -175,27 +181,21 @@ func loadIntro(extras map[string]interface{}) map[string]interface{} {
 	builder.WriteString("╲┃┈┈┈┈╭━┳━━━━╯\n")
 	builder.WriteString("╲┣━━━━━━┫\n")
 	builder.WriteString("\n")
-	builder.WriteString("<b><i>Cậu Vàng</i></b>\n")
-	builder.WriteString("\n")
-	builder.WriteString("<b>Menu tiện ích</b>\n")
-	builder.WriteString("\n")
-	builder.WriteString("<code><b>/menu pin</b></code> - <i>ghim menu tiện ích để thao tác nhanh</i>\n")
-	builder.WriteString("\n")
-	builder.WriteString("<code><b>/menu unpin</b></code> - <i>gỡ menu tiện ích khi không cần</i>\n")
-	builder.WriteString("\n")
 	builder.WriteString("<b>Tra cứu và cảnh báo giá vàng</b>\n")
 	builder.WriteString("\n")
 	builder.WriteString("<code><b>/gold live</b></code> - <i>tra cứu giá vàng mới nhất</i>\n")
-	builder.WriteString("\n")
 	builder.WriteString("<code><b>/gold alert</b></code> - <i>cảnh báo biến động giá vàng</i>\n")
-	builder.WriteString("\n")
 	builder.WriteString("<code><b>/gold history</b></code> - <i>tra cứu lịch sử giá vàng</i>\n")
 	builder.WriteString("\n")
 	builder.WriteString("<b>Góp ý và ủng hộ</b>\n")
 	builder.WriteString("\n")
 	builder.WriteString("<code><b>/feedback</b></code> - <i>gửi góp ý cải thiện bot</i>\n")
+	builder.WriteString("<code><b>/donate</b></code> - <i>☕︎ give me a coffee cup</i>\n")
 	builder.WriteString("\n")
-	builder.WriteString("<code><b>/donate</b></code> - <i>give me a coffee cup ☕︎</i>\n")
+	builder.WriteString("<b>Tiện ích</b>\n")
+	builder.WriteString("\n")
+	builder.WriteString("<code><b>/menu pin</b></code> - <i>ghim menu để thao tác nhanh</i>\n")
+	builder.WriteString("<code><b>/menu unpin</b></code> - <i>gỡ menu khi không cần</i>\n")
 	builder.WriteString("\n")
 	builder.WriteString("<b>Hãy ra lệnh cho tôi!</b>\n")
 
@@ -258,9 +258,9 @@ func loadGoldPriceBoard(extras map[string]interface{}) map[string]interface{} {
 	builder.WriteString("<b>Bảng giá vàng tại Bảo Tín Mạnh Hải:</b>")
 	builder.WriteString("\n\n")
 	builder.WriteString("✦ <b>Nhẫn ép vỉ Kim Gia Bảo</b> - <i>Mua:</i> <b>14.800.000</b> - <i>Bán:</i> <b>15.100.000</b>")
-	builder.WriteString("\n\n")
+	builder.WriteString("\n")
 	builder.WriteString("✦ <b>Nhẫn ép vỉ Kim Gia Bảo</b> - <i>Mua:</i> <b>14.800.000</b> - <i>Bán:</i> <b>15.100.000</b>")
-	builder.WriteString("\n\n")
+	builder.WriteString("\n")
 	builder.WriteString("✦ <b>Nhẫn ép vỉ Kim Gia Bảo</b> - <i>Mua:</i> <b>14.800.000</b> - <i>Bán:</i> <b>15.100.000</b>")
 	builder.WriteString("\n\n")
 	builder.WriteString("<i>(Cập nhật lúc: 18:00:00 18/11/2025</i> - <i>Đơn vị tính: đồng/chỉ)</i>")
@@ -285,4 +285,17 @@ func loadGoldPriceBoard(extras map[string]interface{}) map[string]interface{} {
 	}
 
 	return goldPriceBoard
+}
+
+func loadComingSoon(extras map[string]interface{}) map[string]interface{} {
+	comingSoon := map[string]interface{}{
+		"parse_mode": "HTML",
+		"text":       "<b>Tính năng sẽ sớm được ra mắt!</b>",
+	}
+
+	for k, v := range extras {
+		comingSoon[k] = v
+	}
+
+	return comingSoon
 }
