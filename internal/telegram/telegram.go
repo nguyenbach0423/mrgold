@@ -164,18 +164,33 @@ func (c *Client) editMessageText(command string, extras map[string]interface{}) 
 }
 
 func loadIntro(extras map[string]interface{}) map[string]interface{} {
+	builder := strings.Builder{}
+
+	builder.WriteString("╭━┳━╭━╭━╮╮\n")
+	builder.WriteString("┃┈┈┈┣▅╋▅┫┃\n")
+	builder.WriteString("┃┈┃┈╰━╰━━━━━━╮\n")
+	builder.WriteString("╰┳╯┈┈┈┈┈┈┈┈┈◢▉◣\n")
+	builder.WriteString("╲┃┈┈┈┈┈┈┈┈┈┈▉▉▉\n")
+	builder.WriteString("╲┃┈┈┈┈┈┈┈┈┈┈◥▉◤\n")
+	builder.WriteString("╲┃┈┈┈┈╭━┳━━━━╯\n")
+	builder.WriteString("╲┣━━━━━━┫\n")
+	builder.WriteString("\n")
+	builder.WriteString("<code><b>/gold live</b></code> - <i>tra cứu giá vàng mới nhất</i>\n")
+	builder.WriteString("\n")
+	builder.WriteString("<code><b>/gold alert</b></code> - <i>cảnh báo biến động giá vàng</i>\n")
+	builder.WriteString("\n")
+	builder.WriteString("<code><b>/gold history</b></code> - <i>tra cứu lịch sử giá vàng</i>\n")
+	builder.WriteString("\n")
+	builder.WriteString("<code><b>/gold feedback</b></code> - <i>gửi phản hồi/góp ý</i>\n")
+	builder.WriteString("\n")
+	builder.WriteString("<code><b>/gold live</b></code> - <i>give me a coffee cup ☕︎</i>\n")
+	builder.WriteString("\n")
+	builder.WriteString("<code><b>/menu pin </b></code> - <i>ghim menu tiện ích</i>\n")
+	builder.WriteString("<code><b>/menu unpin</b></code> - <i>gỡ menu tiện ích</i>\n")
+
 	intro := map[string]interface{}{
 		"parse_mode": "HTML",
-		"text": `
-╭━┳━╭━╭━╮╮
-┃┈┈┈┣▅╋▅┫┃
-┃┈┃┈╰━╰━━━━━━╮
-╰┳╯┈┈┈┈┈┈┈┈┈◢▉◣
-╲┃┈┈┈┈┈┈┈┈┈┈▉▉▉
-╲┃┈┈┈┈┈┈┈┈┈┈◥▉◤
-╲┃┈┈┈┈╭━┳━━━━╯
-╲┣━━━━━━┫
-`,
+		"text":       builder.String(),
 	}
 
 	for k, v := range extras {
