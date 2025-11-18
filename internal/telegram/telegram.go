@@ -203,13 +203,15 @@ func loadGoldBranchOptions(extras map[string]interface{}) map[string]interface{}
 func loadGoldPriceBoard(extras map[string]interface{}) map[string]interface{} {
 	builder := strings.Builder{}
 
-	builder.WriteString("<b>Bảng giá vàng tại Bảo Tín Mạnh Hải:</b>\n")
-	builder.WriteString("\n")
-	builder.WriteString("🔶Nhẫn ép vỉ Kim Gia Bảo - Mua: 14.800.000 - Bán: 15.100.000\n")
-	builder.WriteString("🔶Nhẫn ép vỉ Kim Gia Bảo - Mua: 14.800.000 - Bán: 15.100.000\n")
-	builder.WriteString("🔶Nhẫn ép vỉ Kim Gia Bảo - Mua: 14.800.000 - Bán: 15.100.000\n")
-	builder.WriteString("\n")
-	builder.WriteString("<i>(Cập nhật lúc: 18:00:00 18/11/2025 - Đơn vị tính: đồng/chỉ)</i>")
+	builder.WriteString("<b>Bảng giá vàng tại Bảo Tín Mạnh Hải:</b>")
+	builder.WriteString("\n\n")
+	builder.WriteString("✦ <b>Nhẫn ép vỉ Kim Gia Bảo</b> - <i>Mua:</i> <b>14.800.000</b> - <i>Bán:</i> <b>15.100.000</b>")
+	builder.WriteString("\n\n")
+	builder.WriteString("✦ <b>Nhẫn ép vỉ Kim Gia Bảo</b> - <i>Mua:</i> <b>14.800.000</b> - <i>Bán:</i> <b>15.100.000</b>")
+	builder.WriteString("\n\n")
+	builder.WriteString("✦ <b>Nhẫn ép vỉ Kim Gia Bảo</b> - <i>Mua:</i> <b>14.800.000</b> - <i>Bán:</i> <b>15.100.000</b>")
+	builder.WriteString("\n\n")
+	builder.WriteString("<i>(Cập nhật lúc: 18:00:00 18/11/2025</i> - <i>Đơn vị tính: đồng/chỉ)</i>")
 
 	goldPriceBoard := map[string]interface{}{
 		"parse_mode": "HTML",
