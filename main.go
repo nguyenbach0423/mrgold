@@ -514,11 +514,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	id := ""
 	text := ""
 
-	if payload.Message.Chat.Id != 0 {
+	if payload.Message != nil {
 		chatId = payload.Message.Chat.Id
 		id = strconv.Itoa(payload.Message.Chat.Id)
 		text = strings.ToLower(strings.TrimSpace(payload.Message.Text))
-	} else if payload.CallbackQuery.From.Id != 0 {
+	} else if payload.CallbackQuery != nil {
 		chatId = payload.CallbackQuery.From.Id
 		id = strconv.Itoa(payload.CallbackQuery.From.Id)
 		text = payload.CallbackQuery.Data
@@ -755,4 +755,31 @@ func newGoldPriceBoard(id int, branch string) map[string]interface{} {
 			},
 		},
 	}
+}
+
+type Update struct {
+	UpdateId      int            `json:"update_id"`
+	Message       *Message       `json:"message"`
+	CallbackQuery *CallbackQuery `json:"callback_query"`
+}
+
+type Message struct {
+	MessageId int    `json:"message_id"`
+	From      *User  `json:"from"`
+	Chat      *Chat  `json:"chat"`
+	Text      string `json:"text"`
+}
+
+type User struct {
+	Id int `json:"id"`
+}
+
+type Chat struct {
+	Id int `json:"id"`
+}
+
+type CallbackQuery struct {
+	Id      string   `json:"id"`
+	From    *User    `json:"from"`
+	Message *Message `json:"message"`
 }
