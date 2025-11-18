@@ -625,17 +625,6 @@ func sendMessage(v interface{}) {
 	doRequest(http.MethodPost, config.TelegramBotBaseURL+"/sendMessage", nil, reqBody)
 }
 
-func sendAnswerCallbackQuery(v interface{}) {
-	reqBody, err := json.Marshal(v)
-
-	if err != nil {
-		log.Error().Err(err).Send()
-		return
-	}
-
-	doRequest(http.MethodPost, config.TelegramBotBaseURL+"/answerCallbackQuery", nil, reqBody)
-}
-
 func doRequest(method, baseURL string, params map[string]string, reqBody []byte) ([]byte, bool) {
 	var err error
 
@@ -698,68 +687,4 @@ func doRequest(method, baseURL string, params map[string]string, reqBody []byte)
 	}
 
 	return respBody, true
-}
-
-func newGoldBranchOptions(id int) map[string]interface{} {
-	return map[string]interface{}{
-		"chat_id":    id,
-		"parse_mode": "HTML",
-		"text":       "<b>Vui lòng chọn thương hiệu trong danh sách sau:</b>",
-		"reply_markup": map[string]interface{}{
-			"inline_keyboard": []interface{}{
-				[]interface{}{
-					map[string]interface{}{
-						"text":          "SJC",
-						"callback_data": "/next GoldPriceBoard SJC",
-					},
-					map[string]interface{}{
-						"text":          "DOJI",
-						"callback_data": "/next GoldPriceBoard DOJI",
-					},
-					map[string]interface{}{
-						"text":          "PNJ",
-						"callback_data": "/next GoldPriceBoard PNJ",
-					},
-				},
-				[]interface{}{
-					map[string]interface{}{
-						"text":          "Bảo Tín Minh Châu",
-						"callback_data": "/next GoldPriceBoard BTMC",
-					},
-					map[string]interface{}{
-						"text":          "Bảo Tín Mạnh Hải",
-						"callback_data": "/next GoldPriceBoard BTMH",
-					},
-				},
-			},
-		},
-	}
-}
-
-func newGoldPriceBoard(id int, branch string) map[string]interface{} {
-	builder := strings.Builder{}
-
-	builder.WriteString("<b>Bảng giá vàng tại Bảo Tín Mạnh Hải:</b>\n")
-	builder.WriteString("\n")
-	builder.WriteString("🔶Nhẫn ép vỉ Kim Gia Bảo - Mua: 14.800.000 - Bán: 15.100.000\n")
-	builder.WriteString("🔶Nhẫn ép vỉ Kim Gia Bảo - Mua: 14.800.000 - Bán: 15.100.000\n")
-	builder.WriteString("🔶Nhẫn ép vỉ Kim Gia Bảo - Mua: 14.800.000 - Bán: 15.100.000\n")
-	builder.WriteString("\n")
-	builder.WriteString("<i>(Cập nhật lúc: 18:00:00 18/11/2025 - Đơn vị tính: đồng/chỉ)</i>")
-
-	return map[string]interface{}{
-		"chat_id":    id,
-		"parse_mode": "HTML",
-		"text":       builder.String(),
-		"reply_markup": map[string]interface{}{
-			"inline_keyboard": []interface{}{
-				[]interface{}{
-					map[string]interface{}{
-						"text":          "<< Quay lại danh sách thương hiệu",
-						"callback_data": "/return GoldBranchOptions",
-					},
-				},
-			},
-		},
-	}
 }
