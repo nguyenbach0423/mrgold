@@ -81,14 +81,18 @@ func (c *Client) sendMessage(command string, extras map[string]interface{}) {
 	var err error
 
 	var reqBody []byte
-	if command == "/start" {
+	if command == "/gold live" {
 		reqBody, err = json.Marshal(loadGoldBranchOptions(extras))
 		if err != nil {
 			log.Error().Err(err).Send()
 			return
 		}
 	} else {
-		return
+		reqBody, err = json.Marshal(loadIntro(extras))
+		if err != nil {
+			log.Error().Err(err).Send()
+			return
+		}
 	}
 
 	c.httpClient.Do(
@@ -157,6 +161,28 @@ func (c *Client) editMessageText(command string, extras map[string]interface{}) 
 			httpclient.WithBody(reqBody),
 		),
 	)
+}
+
+func loadIntro(extras map[string]interface{}) map[string]interface{} {
+	intro := map[string]interface{}{
+		"parse_mode": "HTML",
+		"text": `
+╭━┳━╭━╭━╮╮
+┃┈┈┈┣▅╋▅┫┃
+┃┈┃┈╰━╰━━━━━━╮
+╰┳╯┈┈┈┈┈┈┈┈┈◢▉◣
+╲┃┈┈┈┈┈┈┈┈┈┈▉▉▉
+╲┃┈┈┈┈┈┈┈┈┈┈◥▉◤
+╲┃┈┈┈┈╭━┳━━━━╯
+╲┣━━━━━━┫
+`,
+	}
+
+	for k, v := range extras {
+		intro[k] = v
+	}
+
+	return intro
 }
 
 func loadGoldBranchOptions(extras map[string]interface{}) map[string]interface{} {
