@@ -19,6 +19,8 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gocolly/colly/v2"
+	"github.com/mrgold/internal/httpclient"
+	"github.com/mrgold/internal/telegram"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -510,27 +512,32 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	chatId := 0
 	id := ""
 	text := ""
 
+	telegramClient := telegram.NewClient(telegram.WithHTTPClient(
+		httpclient.NewClient(
+			httpclient.WithTimeout(10*time.Second),
+			httpclient.WithRetryConfig(&httpclient.RetryConfig{
+				MaxRetries: 3,
+				Backoff:    200 * time.Millisecond,
+				MaxBackoff: 1 * time.Second,
+			}),
+		),
+	))
+
+	var update *telegram.Update
+	_ = json.Unmarshal(body, &update)
+
 	if payload.Message != nil {
-		chatId = payload.Message.Chat.Id
 		id = strconv.Itoa(payload.Message.Chat.Id)
 		text = strings.ToLower(strings.TrimSpace(payload.Message.Text))
+		telegramClient.HandleUpdate(update)
 	} else if payload.CallbackQuery != nil {
-		chatId = payload.CallbackQuery.From.Id
 		id = strconv.Itoa(payload.CallbackQuery.From.Id)
 		text = payload.CallbackQuery.Data
 
-		go sendAnswerCallbackQuery(map[string]interface{}{
-			"callback_query_id": payload.CallbackQuery.Id,
-		})
-	}
-
-	if text == "/start" {
-		go sendMessage(newGoldBranchOptions(chatId))
-		return
+		telegramClient.HandleCallbackQuery(update.CallbackQuery)
 	}
 
 	var pattern = regexp.MustCompile("(?i)^/gold\\s+(SJC|PNJ|DOJI|BTMC|BTMH)$")
@@ -755,31 +762,4 @@ func newGoldPriceBoard(id int, branch string) map[string]interface{} {
 			},
 		},
 	}
-}
-
-type Update struct {
-	UpdateId      int            `json:"update_id"`
-	Message       *Message       `json:"message"`
-	CallbackQuery *CallbackQuery `json:"callback_query"`
-}
-
-type Message struct {
-	MessageId int    `json:"message_id"`
-	From      *User  `json:"from"`
-	Chat      *Chat  `json:"chat"`
-	Text      string `json:"text"`
-}
-
-type User struct {
-	Id int `json:"id"`
-}
-
-type Chat struct {
-	Id int `json:"id"`
-}
-
-type CallbackQuery struct {
-	Id      string   `json:"id"`
-	From    *User    `json:"from"`
-	Message *Message `json:"message"`
 }
