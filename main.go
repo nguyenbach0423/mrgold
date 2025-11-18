@@ -515,16 +515,19 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	id := ""
 	text := ""
 
-	telegramClient := telegram.NewClient(telegram.WithHTTPClient(
-		httpclient.NewClient(
-			httpclient.WithTimeout(10*time.Second),
-			httpclient.WithRetryConfig(&httpclient.RetryConfig{
-				MaxRetries: 3,
-				Backoff:    200 * time.Millisecond,
-				MaxBackoff: 1 * time.Second,
-			}),
+	telegramClient := telegram.NewClient(
+		telegram.WithHTTPClient(
+			httpclient.NewClient(
+				httpclient.WithTimeout(10*time.Second),
+				httpclient.WithRetryConfig(&httpclient.RetryConfig{
+					MaxRetries: 3,
+					Backoff:    200 * time.Millisecond,
+					MaxBackoff: 1 * time.Second,
+				}),
+			),
 		),
-	))
+		telegram.WithBaseURL(config.TelegramBotBaseURL),
+	)
 
 	var update *telegram.Update
 	_ = json.Unmarshal(body, &update)
