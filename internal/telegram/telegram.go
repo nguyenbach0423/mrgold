@@ -17,6 +17,7 @@ var DefaultHeaders = map[string]string{
 
 type Client struct {
 	httpClient *httpclient.Client
+	baseURL    string
 }
 
 func NewClient(opts ...func(*Client)) *Client {
@@ -34,6 +35,12 @@ func NewClient(opts ...func(*Client)) *Client {
 func WithHTTPClient(httpClient *httpclient.Client) func(*Client) {
 	return func(c *Client) {
 		c.httpClient = httpClient
+	}
+}
+
+func WithBaseURL(baseURL string) func(*Client) {
+	return func(c *Client) {
+		c.baseURL = baseURL
 	}
 }
 
@@ -87,7 +94,7 @@ func (c *Client) sendMessage(command string, extras map[string]interface{}) {
 	c.httpClient.Do(
 		httpclient.NewRequest(
 			http.MethodPost,
-			"/sendMessage",
+			c.baseURL+"/sendMessage",
 			httpclient.WithHeaders(DefaultHeaders),
 			httpclient.WithBody(reqBody),
 		),
@@ -115,7 +122,7 @@ func (c *Client) answerCallbackQuery(id string) {
 	c.httpClient.Do(
 		httpclient.NewRequest(
 			http.MethodPost,
-			"/answerCallbackQuery",
+			c.baseURL+"/answerCallbackQuery",
 			httpclient.WithHeaders(DefaultHeaders),
 			httpclient.WithBody(reqBody),
 		),
@@ -145,7 +152,7 @@ func (c *Client) editMessageText(command string, extras map[string]interface{}) 
 	c.httpClient.Do(
 		httpclient.NewRequest(
 			http.MethodPost,
-			"/editMessageText",
+			c.baseURL+"/editMessageText",
 			httpclient.WithHeaders(DefaultHeaders),
 			httpclient.WithBody(reqBody),
 		),
