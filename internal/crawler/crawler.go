@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -191,11 +192,16 @@ func (c *Crawler) crawlPNJ() {
 
 		var golds []Gold
 
+		codes := []string{"SJC", "N24K", "KB", "TL", "PNJ", "24K", "999", "99", "75", "58.5", "41"}
 		for _, gold := range goldPriceBoard.Data {
+			if !slices.Contains(codes, gold.Code) {
+				continue
+			}
+
 			golds = append(golds, Gold{
 				Name:      gold.Name,
-				BuyPrice:  strconv.Itoa(gold.BuyPrice),
-				SellPrice: strconv.Itoa(gold.SellPrice),
+				BuyPrice:  convertNumericPrice(gold.BuyPrice),
+				SellPrice: convertNumericPrice(gold.SellPrice),
 			})
 		}
 
@@ -266,8 +272,8 @@ func (c *Crawler) crawlBTMC() {
 
 			gold := Gold{
 				Name:      convertGoldNameBTMC(name),
-				BuyPrice:  convertPrice(buyPrice),
-				SellPrice: convertPrice(sellPrice),
+				BuyPrice:  convertStringPrice(buyPrice),
+				SellPrice: convertStringPrice(sellPrice),
 			}
 
 			golds = append(golds, gold)
@@ -336,12 +342,31 @@ func (c *Crawler) crawlBTMH() {
 	}
 }
 
-func convertPrice(s string) string {
+func convertNumericPrice(n int) string {
+	n = n * 1000
+
+	s := strconv.Itoa(n)
+	var result []string
+
+	for len(s) > 3 {
+		result = append([]string{s[len(s)-3:]}, result...)
+		s = s[:len(s)-3]
+	}
+
+	result = append([]string{s}, result...)
+	return strings.Join(result, ".")
+}
+
+func convertStringPrice(s string) string {
 	if s == "" {
 		return s
 	}
 
-	n, _ := strconv.Atoi(s)
+	n, err := strconv.Atoi(s)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return s
+	}
 	n = n * 1000
 
 	s = strconv.Itoa(n)
