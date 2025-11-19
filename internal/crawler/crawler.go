@@ -72,6 +72,7 @@ func (c *Crawler) crawlSJC() {
 		var goldPriceBoard struct {
 			UpdatedAt string `json:"latestDate"`
 			Data      []struct {
+				Id        int    `json:"Id"`
 				Branch    string `json:"BranchName"`
 				Name      string `json:"TypeName"`
 				BuyPrice  string `json:"Buy"`
@@ -87,13 +88,13 @@ func (c *Crawler) crawlSJC() {
 		var golds []Gold
 
 		for _, gold := range goldPriceBoard.Data {
-			if gold.Branch != "Hồ Chí Minh" {
+			if gold.Branch != "Hồ Chí Minh" || gold.Id == 129 || gold.Id == 210 {
 				continue
 			}
 			golds = append(golds, Gold{
 				Name:      gold.Name,
-				BuyPrice:  gold.BuyPrice,
-				SellPrice: gold.SellPrice,
+				BuyPrice:  convertStringPrice(gold.BuyPrice),
+				SellPrice: convertStringPrice(gold.SellPrice),
 			})
 		}
 
