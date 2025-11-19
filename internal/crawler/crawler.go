@@ -52,6 +52,7 @@ func (c *Crawler) Crawl() {
 	go c.crawlSJC()
 	go c.crawlDOJI()
 	go c.crawlPNJ()
+	go c.crawlBTMH()
 }
 
 func (c *Crawler) crawlSJC() {
