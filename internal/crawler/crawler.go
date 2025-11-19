@@ -388,7 +388,7 @@ func convertStringPrice(s string) string {
 	}
 
 	result = append([]string{s}, result...)
-	return strings.Join(result, ".")
+	return strings.Join(result, ",")
 }
 
 func convertGoldNameDOJI(s string) string {
