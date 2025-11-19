@@ -333,6 +333,10 @@ func (c *Crawler) crawlBTMH() {
 }
 
 func convertPrice(s string) string {
+	if s == "" {
+		return s
+	}
+
 	n, _ := strconv.Atoi(s)
 	n = n * 1000
 
