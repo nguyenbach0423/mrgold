@@ -316,7 +316,14 @@ func loadGoldPriceBoard(board *crawler.GoldPriceBoard, extras map[string]interfa
 		builder.WriteString(fmt.Sprintf("<b>Bảng giá vàng tại %s:</b>\n", board.Brand))
 		builder.WriteString("\n")
 		for _, gold := range board.Golds {
-			builder.WriteString(fmt.Sprintf("✦ <b>%s</b> - <i>Mua:</i> <b>%s</b> - <i>Bán:</i> <b>%s</b>\n", gold.Name, gold.BuyPrice, gold.SellPrice))
+			builder.WriteString(fmt.Sprintf("✦ <b>%s</b>", gold.Name))
+			if gold.BuyPrice != "" {
+				builder.WriteString(fmt.Sprintf(" - <i>Mua:</i> <b>%s</b>", gold.BuyPrice))
+			}
+			if gold.SellPrice != "" {
+				builder.WriteString(fmt.Sprintf(" - <i>Bán:</i> <b>%s</b>", gold.SellPrice))
+			}
+			builder.WriteString("\n")
 		}
 		builder.WriteString("\n")
 		builder.WriteString(fmt.Sprintf("<i>(Cập nhật lúc: %s</i> - <i>Đơn vị tính: đồng/chỉ)</i>", board.UpdatedAt))
