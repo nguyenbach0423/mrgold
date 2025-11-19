@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mrgold/internal/httpclient"
@@ -261,8 +262,8 @@ func (c *Crawler) crawlBTMC() {
 
 			gold := Gold{
 				Name:      name,
-				BuyPrice:  buyPrice,
-				SellPrice: sellPrice,
+				BuyPrice:  convertPrice(buyPrice),
+				SellPrice: convertPrice(sellPrice),
 			}
 
 			golds = append(golds, gold)
@@ -271,10 +272,12 @@ func (c *Crawler) crawlBTMC() {
 		updatedAt := strings.TrimSpace(doc.Find("p.note span").Text())
 		updatedAt = strings.ReplaceAll(updatedAt, "Cập nhật lúc ", "")
 
+		t, _ := time.Parse("02/01/2006 15:04", updatedAt)
+
 		c.Boards["btmc"] = &GoldPriceBoard{
 			Brand:     "Bảo Tín Minh Châu",
 			Golds:     golds,
-			UpdatedAt: updatedAt,
+			UpdatedAt: t.Format("15:04 02/01/2006"),
 		}
 	}
 }
@@ -327,4 +330,20 @@ func (c *Crawler) crawlBTMH() {
 			UpdatedAt: updatedAt,
 		}
 	}
+}
+
+func convertPrice(s string) string {
+	n, _ := strconv.Atoi(s)
+	n = n * 1000
+
+	s = strconv.Itoa(n)
+	var result []string
+
+	for len(s) > 3 {
+		result = append([]string{s[len(s)-3:]}, result...)
+		s = s[:len(s)-3]
+	}
+
+	result = append([]string{s}, result...)
+	return strings.Join(result, ".")
 }
