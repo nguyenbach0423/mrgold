@@ -202,3 +202,52 @@ func (c *Crawler) crawlPNJ() {
 		}
 	}
 }
+
+func (c *Crawler) crawlBTMH() {
+	resp, ok := c.httpClient.Do(
+		httpclient.NewRequest(
+			http.MethodGet,
+			"https://baotinmanhhai.vn/gia-vang-hom-nay",
+			httpclient.WithHeaders(httpclient.DefaultHeaders),
+		),
+	)
+
+	if ok {
+		doc, err := goquery.NewDocumentFromReader(bytes.NewReader(resp.Body))
+		if err != nil {
+			log.Error().Err(err).Send()
+			return
+		}
+
+		var golds []Gold
+
+		doc.Find("table.gold-table-content tbody tr").Each(func(_ int, s *goquery.Selection) {
+			var cells []string
+
+			s.Find("td").Each(func(_ int, s *goquery.Selection) {
+				cells = append(cells, strings.TrimSpace(s.Text()))
+			})
+
+			if len(cells) == 0 {
+				return
+			}
+
+			gold := Gold{
+				Name:      cells[0],
+				BuyPrice:  cells[1],
+				SellPrice: cells[2],
+			}
+
+			golds = append(golds, gold)
+		})
+
+		updatedAt := strings.TrimSpace(doc.Find("p.note").Text())
+		updatedAt = strings.TrimPrefix(updatedAt, "Cập nhập lúc: ")
+
+		c.Boards["btmh"] = &GoldPriceBoard{
+			Brand:     "Bảo Tín Mạnh Hải",
+			Golds:     golds,
+			UpdatedAt: updatedAt,
+		}
+	}
+}
