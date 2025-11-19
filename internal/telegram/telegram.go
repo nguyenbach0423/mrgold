@@ -234,14 +234,14 @@ func loadIntro(extras map[string]interface{}) map[string]interface{} {
 
 	builder.WriteString("<b>Tra cứu và cảnh báo giá vàng</b>\n")
 	builder.WriteString("\n")
-	builder.WriteString("<code><b>/gold_live</b></code> - <i>tra cứu giá vàng mới nhất</i>\n")
-	builder.WriteString("<code><b>/gold_alert</b></code> - <i>cảnh báo biến động giá vàng</i>\n")
-	builder.WriteString("<code><b>/gold_history</b></code> - <i>tra cứu lịch sử giá vàng</i>\n")
+	builder.WriteString("<code><b>/gold_live</b></code> - <i>Tra cứu giá vàng mới nhất</i>\n")
+	builder.WriteString("<code><b>/gold_alert</b></code> - <i>Cảnh báo biến động giá vàng</i>\n")
+	builder.WriteString("<code><b>/gold_history</b></code> - <i>Tra cứu lịch sử giá vàng</i>\n")
 	builder.WriteString("\n")
 	builder.WriteString("<b>Góp ý và ủng hộ</b>\n")
 	builder.WriteString("\n")
-	builder.WriteString("<code><b>/feedback</b></code> - <i>gửi góp ý cải thiện bot</i>\n")
-	builder.WriteString("<code><b>/donate</b></code> - <i>☕︎ give me a coffee cup</i>\n")
+	builder.WriteString("<code><b>/feedback</b></code> - <i>Gửi góp ý cải thiện bot</i>\n")
+	builder.WriteString("<code><b>/donate</b></code> - <i>☕︎ Buy me a coffee</i>\n")
 
 	intro := map[string]interface{}{
 		"parse_mode": "HTML",
