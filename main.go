@@ -39,7 +39,7 @@ func main() {
 		telegram.WithCrawler(c),
 	)
 
-	if ok := telegramClient.SetWebhook(os.Getenv("PUBLIC_DOMAIN") + "/webhook"); !ok {
+	if ok := telegramClient.SetWebhook(os.Getenv("PUBLIC_DOMAIN")); !ok {
 		os.Exit(1)
 	}
 
