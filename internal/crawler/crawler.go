@@ -269,7 +269,7 @@ func (c *Crawler) crawlBTMC() {
 		})
 
 		updatedAt := strings.TrimSpace(doc.Find("p.note span").Text())
-		updatedAt = strings.ReplaceAll(updatedAt, "Cập nhập lúc ", "")
+		updatedAt = strings.ReplaceAll(updatedAt, "Cập nhật lúc ", "")
 
 		c.Boards["btmc"] = &GoldPriceBoard{
 			Brand:     "Bảo Tín Minh Châu",
@@ -318,7 +318,7 @@ func (c *Crawler) crawlBTMH() {
 		})
 
 		updatedAt := strings.TrimSpace(doc.Find("p.note").Text())
-		updatedAt = strings.ReplaceAll(updatedAt, "(Cập nhập lúc: ", "")
+		updatedAt = strings.ReplaceAll(updatedAt, "(Cập nhật lúc ", "")
 		updatedAt = strings.ReplaceAll(updatedAt, ") (đơn vị tính: đồng/chỉ)", "")
 
 		c.Boards["btmh"] = &GoldPriceBoard{
