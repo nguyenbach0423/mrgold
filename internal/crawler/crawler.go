@@ -205,10 +205,12 @@ func (c *Crawler) crawlPNJ() {
 			})
 		}
 
+		t, _ := time.Parse("02/01/2006 15:04:05", goldPriceBoard.UpdatedAt)
+
 		c.Boards["pnj"] = &GoldPriceBoard{
 			Brand:     "PNJ",
 			Golds:     golds,
-			UpdatedAt: goldPriceBoard.UpdatedAt,
+			UpdatedAt: t.Format("15:04 02/01/2006"),
 		}
 	}
 }
