@@ -144,9 +144,14 @@ func (c *Crawler) crawlDOJI() {
 		doc.Find("table.goldprice-view tbody tr").Each(func(_ int, s *goquery.Selection) {
 			gold := Gold{}
 
-			gold.Name = strings.TrimSpace(s.Find("td.first span.title").Text())
-			gold.BuyPrice = strings.TrimSpace(s.Find("td.goldprice-td-0 div.item-relative").Text())
-			gold.SellPrice = strings.TrimSpace(s.Find("td.goldprice-td-1 div.item-relative").Text())
+			name := strings.TrimSpace(s.Find("td.first span.title").Text())
+			gold.Name = convertGoldNameDOJI(name)
+			if gold.Name == "" {
+				return
+			}
+
+			gold.BuyPrice = convertStringPrice(strings.TrimSpace(s.Find("td.goldprice-td-0 div.item-relative").Text()))
+			gold.SellPrice = convertStringPrice(strings.TrimSpace(s.Find("td.goldprice-td-1 div.item-relative").Text()))
 
 			golds = append(golds, gold)
 		})
@@ -268,7 +273,7 @@ func (c *Crawler) crawlBTMC() {
 				}
 			}
 
-			if strings.ToLower(name) == "vàng nguyên liệu" {
+			if strings.Contains(strings.ToLower(name), "nguyên liệu") {
 				return
 			}
 
@@ -364,6 +369,8 @@ func convertStringPrice(s string) string {
 		return s
 	}
 
+	s = strings.ReplaceAll(s, ",", "")
+
 	n, err := strconv.Atoi(s)
 	if err != nil {
 		log.Error().Err(err).Send()
@@ -381,6 +388,20 @@ func convertStringPrice(s string) string {
 
 	result = append([]string{s}, result...)
 	return strings.Join(result, ".")
+}
+
+func convertGoldNameDOJI(s string) string {
+	s = strings.ToLower(s)
+	if strings.Contains(s, "nguyên liệu") {
+		return ""
+	}
+
+	s = strings.ToUpper(string(s[0])) + s[1:]
+	s = strings.ReplaceAll(s, "Avpl/sjc", "AVPL/SJC")
+	s = strings.ReplaceAll(s, "hưng thịnh vượng", "Hưng Thịnh Vượng")
+	s = strings.ReplaceAll(s, " - bán lẻ", "")
+
+	return s
 }
 
 func convertGoldNameBTMC(s string) string {
