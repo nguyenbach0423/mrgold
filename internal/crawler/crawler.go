@@ -51,6 +51,7 @@ type GoldPriceBoard struct {
 func (c *Crawler) Crawl() {
 	go c.crawlSJC()
 	go c.crawlDOJI()
+	go c.crawlPNJ()
 }
 
 func (c *Crawler) crawlSJC() {
