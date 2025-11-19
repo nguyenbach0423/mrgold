@@ -224,7 +224,7 @@ func loadMenu() map[string]interface{} {
 			{"command": "gold_alert", "description": "Cảnh báo biến động giá vàng"},
 			{"command": "gold_history", "description": "Tra cứu lịch sử giá vàng"},
 			{"command": "feedback", "description": "Gửi góp ý cải thiện bot"},
-			{"command": "donate", "description": "☕︎ Give me a coffee cup"},
+			{"command": "donate", "description": "☕︎ Buy me a coffee"},
 		},
 	}
 }
