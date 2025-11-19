@@ -94,53 +94,6 @@ func init() {
 	zerolog.TimeFieldFormat = time.DateTime
 }
 
-//func crawlPNJ() {
-//	resp, ok := doRequest(http.MethodGet, "https://edge-api.pnj.io/ecom-frontend/v1/get-gold-price", map[string]string{
-//		"zone": "11",
-//	}, nil)
-//
-//	if ok {
-//		var goldPriceBoard struct {
-//			Data []struct {
-//				Code      string `json:"masp"`
-//				Name      string `json:"tensp"`
-//				BuyPrice  int    `json:"giamua"`
-//				SellPrice int    `json:"giaban"`
-//			} `json:"data"`
-//			Branch    string `json:"chinhanh"`
-//			UpdatedAt string `json:"updateDate"`
-//		}
-//
-//		if err := json.Unmarshal(resp, &goldPriceBoard); err != nil {
-//			log.Error().Err(err).Send()
-//			return
-//		}
-//
-//		var golds []Gold
-//
-//		for _, gold := range goldPriceBoard.Data {
-//			golds = append(golds, Gold{
-//				Name:      gold.Name,
-//				BuyPrice:  strconv.Itoa(gold.BuyPrice),
-//				SellPrice: strconv.Itoa(gold.SellPrice),
-//			})
-//		}
-//
-//		location, err := time.LoadLocation("Asia/Ho_Chi_Minh")
-//		if err != nil {
-//			log.Error().Err(err).Send()
-//			return
-//		}
-//		updatedAt := time.Now().In(location).Format(time.DateTime)
-//
-//		goldPriceBoards["pnj"] = &GoldPriceBoard{
-//			Brand:     "PNJ",
-//			Golds:     golds,
-//			UpdatedAt: updatedAt,
-//		}
-//	}
-//}
-//
 //func crawlBTMC(r *colly.Response) {
 //	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(r.Body))
 //	if err != nil {

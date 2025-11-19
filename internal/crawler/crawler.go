@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -151,6 +152,52 @@ func (c *Crawler) crawlDOJI() {
 			Brand:     "DOJI",
 			Golds:     golds,
 			UpdatedAt: updatedAt,
+		}
+	}
+}
+
+func (c *Crawler) crawlPNJ() {
+	resp, ok := c.httpClient.Do(
+		httpclient.NewRequest(
+			http.MethodGet,
+			"https://edge-api.pnj.io/ecom-frontend/v1/get-gold-price",
+			httpclient.WithQueryParams(map[string][]string{
+				"zone": {"11"},
+			}),
+			httpclient.WithHeaders(httpclient.DefaultHeaders),
+		),
+	)
+
+	if ok {
+		var goldPriceBoard struct {
+			Data []struct {
+				Code      string `json:"masp"`
+				Name      string `json:"tensp"`
+				BuyPrice  int    `json:"giamua"`
+				SellPrice int    `json:"giaban"`
+			} `json:"data"`
+			UpdatedAt string `json:"updateDate"`
+		}
+
+		if err := json.Unmarshal(resp.Body, &goldPriceBoard); err != nil {
+			log.Error().Err(err).Send()
+			return
+		}
+
+		var golds []Gold
+
+		for _, gold := range goldPriceBoard.Data {
+			golds = append(golds, Gold{
+				Name:      gold.Name,
+				BuyPrice:  strconv.Itoa(gold.BuyPrice),
+				SellPrice: strconv.Itoa(gold.SellPrice),
+			})
+		}
+
+		c.Boards["pnj"] = &GoldPriceBoard{
+			Brand:     "PNJ",
+			Golds:     golds,
+			UpdatedAt: goldPriceBoard.UpdatedAt,
 		}
 	}
 }
