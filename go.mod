@@ -3,7 +3,7 @@ module github.com/mrgold
 go 1.25.1
 
 require (
-	github.com/PuerkitoBio/goquery v1.10.3
+	github.com/PuerkitoBio/goquery v1.11.0
 	github.com/google/uuid v1.6.0
 	github.com/rs/zerolog v1.34.0
 )

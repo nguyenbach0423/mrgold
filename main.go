@@ -67,8 +67,10 @@ func main() {
 		}
 	}()
 
-	s := httpserver.NewServer(os.Getenv("PORT"))
-	httpserver.WithTelegramClient(telegramClient)(s)
+	s := httpserver.NewServer(
+		os.Getenv("PORT"),
+		httpserver.WithTelegramClient(telegramClient),
+	)
 
 	go func() {
 		if ok := s.Start(); !ok {

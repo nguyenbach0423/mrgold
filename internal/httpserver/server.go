@@ -18,13 +18,19 @@ type Server struct {
 	httpServer *http.Server
 }
 
-func NewServer(port string) *Server {
-	return &Server{
+func NewServer(port string, opts ...func(*Server)) *Server {
+	s := &Server{
 		httpServer: &http.Server{
 			Addr:    ":" + port,
 			Handler: &Handler{},
 		},
 	}
+
+	for _, opt := range opts {
+		opt(s)
+	}
+
+	return s
 }
 
 func WithTelegramClient(telegramClient *telegram.Client) func(*Server) {
