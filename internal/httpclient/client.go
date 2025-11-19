@@ -129,6 +129,7 @@ func (c *Client) Do(req *Request) (*Response, bool) {
 		}
 
 		if resp.StatusCode == http.StatusOK {
+			logger.Info().Interface("response", resp.Log()).Send()
 			return resp, true
 		}
 

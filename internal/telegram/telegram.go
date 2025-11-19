@@ -220,7 +220,7 @@ func (c *Client) editMessageText(command string, extras map[string]interface{}) 
 func loadMenu() map[string]interface{} {
 	return map[string]interface{}{
 		"commands": []map[string]string{
-			{"command": "/gold", "description": "tra cứu giá vàng mới nhất"},
+			{"command": "/gold_live", "description": "tra cứu giá vàng mới nhất"},
 			{"command": "/gold_alert", "description": "cảnh báo biến động giá vàng"},
 			{"command": "/gold_history", "description": "tra cứu lịch sử giá vàng"},
 			{"command": "/feedback", "description": "gửi góp ý cải thiện bot"},
@@ -242,9 +242,9 @@ func loadIntro(extras map[string]interface{}) map[string]interface{} {
 	builder.WriteString("╲┣━━━━━━┫\n")
 	builder.WriteString("\n")
 	builder.WriteString("<b>Tra cứu và cảnh báo giá vàng</b>\n")
-	builder.WriteString("<code><b>/gold live</b></code> - <i>tra cứu giá vàng mới nhất</i>\n")
-	builder.WriteString("<code><b>/gold alert</b></code> - <i>cảnh báo biến động giá vàng</i>\n")
-	builder.WriteString("<code><b>/gold history</b></code> - <i>tra cứu lịch sử giá vàng</i>\n")
+	builder.WriteString("<code><b>/gold_live</b></code> - <i>tra cứu giá vàng mới nhất</i>\n")
+	builder.WriteString("<code><b>/gold_alert</b></code> - <i>cảnh báo biến động giá vàng</i>\n")
+	builder.WriteString("<code><b>/gold_history</b></code> - <i>tra cứu lịch sử giá vàng</i>\n")
 	builder.WriteString("\n")
 	builder.WriteString("<b>Góp ý và ủng hộ</b>\n")
 	builder.WriteString("<code><b>/feedback</b></code> - <i>gửi góp ý cải thiện bot</i>\n")
