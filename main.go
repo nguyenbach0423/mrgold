@@ -16,10 +16,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-//var crawlers = map[string]*Crawler{
-//	"https://btmc.vn/bieu-do-gia-vang.html?t=ngay&srsltid=AfmBOopkLFTaGSDib4E6WuWUNcG1Z5Q9vmfqzNBuJUHwlCoYX66i8HPl": {APIFunc: nil, CollyFunc: crawlBTMC},
-//	"https://baotinmanhhai.vn/gia-vang-hom-nay": {APIFunc: nil, CollyFunc: crawlBTMH},
-//}
+//	"https://btmc.vn/bieu-do-gia-vang.html?t=ngay&srsltid=AfmBOopkLFTaGSDib4E6WuWUNcG1Z5Q9vmfqzNBuJUHwlCoYX66i8HPl"
+//	"https://baotinmanhhai.vn/gia-vang-hom-nay"
 
 func main() {
 	httpClient := httpclient.NewClient(
