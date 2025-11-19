@@ -220,11 +220,11 @@ func (c *Client) editMessageText(command string, extras map[string]interface{}) 
 func loadMenu() map[string]interface{} {
 	return map[string]interface{}{
 		"commands": []map[string]string{
-			{"command": "gold_live", "description": "tra cứu giá vàng mới nhất"},
-			{"command": "gold_alert", "description": "cảnh báo biến động giá vàng"},
-			{"command": "gold_history", "description": "tra cứu lịch sử giá vàng"},
-			{"command": "feedback", "description": "gửi góp ý cải thiện bot"},
-			{"command": "donate", "description": "☕︎ give me a coffee cup"},
+			{"command": "gold_live", "description": "Tra cứu giá vàng mới nhất"},
+			{"command": "gold_alert", "description": "Cảnh báo biến động giá vàng"},
+			{"command": "gold_history", "description": "Tra cứu lịch sử giá vàng"},
+			{"command": "feedback", "description": "Gửi góp ý cải thiện bot"},
+			{"command": "donate", "description": "☕︎ Give me a coffee cup"},
 		},
 	}
 }

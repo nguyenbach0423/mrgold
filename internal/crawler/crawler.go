@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -52,6 +53,7 @@ func (c *Crawler) Crawl() {
 	go c.crawlSJC()
 	go c.crawlDOJI()
 	go c.crawlPNJ()
+	go c.crawlBTMC()
 	go c.crawlBTMH()
 }
 
@@ -148,7 +150,7 @@ func (c *Crawler) crawlDOJI() {
 		})
 
 		updatedAt := strings.TrimSpace(doc.Find("span.update-time").Text())
-		updatedAt = strings.TrimPrefix(updatedAt, "Cập nhập lúc: ")
+		updatedAt = strings.ReplaceAll(updatedAt, "Cập nhập lúc: ", "")
 
 		c.Boards["doji"] = &GoldPriceBoard{
 			Brand:     "DOJI",
@@ -204,6 +206,79 @@ func (c *Crawler) crawlPNJ() {
 	}
 }
 
+func (c *Crawler) crawlBTMC() {
+	resp, ok := c.httpClient.Do(
+		httpclient.NewRequest(
+			http.MethodGet,
+			"https://btmc.vn/bieu-do-gia-vang.html?t=ngay&srsltid=AfmBOopkLFTaGSDib4E6WuWUNcG1Z5Q9vmfqzNBuJUHwlCoYX66i8HPl",
+			httpclient.WithHeaders(httpclient.DefaultHeaders),
+		),
+	)
+
+	if ok {
+		doc, err := goquery.NewDocumentFromReader(bytes.NewReader(resp.Body))
+		if err != nil {
+			log.Error().Err(err).Send()
+			return
+		}
+
+		var golds []Gold
+
+		doc.Find("table.bd_price_home tr").Each(func(_ int, s *goquery.Selection) {
+			var cells []string
+
+			s.Find("td").Each(func(_ int, s *goquery.Selection) {
+				cells = append(cells, strings.TrimSpace(s.Text()))
+			})
+
+			if len(cells) == 0 {
+				return
+			}
+
+			var name = ""
+			var buyPrice = ""
+			var sellPrice = ""
+
+			pattern := regexp.MustCompile("^[0-9]+$")
+
+			if len(cells) == 5 {
+				name = strings.ReplaceAll(cells[1], "  ", " ")
+				if pattern.MatchString(cells[3]) {
+					buyPrice = cells[3]
+				}
+				if pattern.MatchString(cells[4]) {
+					sellPrice = cells[4]
+				}
+			} else if len(cells) == 4 {
+				name = strings.ReplaceAll(cells[0], "  ", " ")
+				if pattern.MatchString(cells[2]) {
+					buyPrice = cells[2]
+				}
+				if pattern.MatchString(cells[3]) {
+					sellPrice = cells[3]
+				}
+			}
+
+			gold := Gold{
+				Name:      name,
+				BuyPrice:  buyPrice,
+				SellPrice: sellPrice,
+			}
+
+			golds = append(golds, gold)
+		})
+
+		updatedAt := strings.TrimSpace(doc.Find("p.note span").Text())
+		updatedAt = strings.ReplaceAll(updatedAt, "Cập nhập lúc ", "")
+
+		c.Boards["btmc"] = &GoldPriceBoard{
+			Brand:     "Bảo Tín Minh Châu",
+			Golds:     golds,
+			UpdatedAt: updatedAt,
+		}
+	}
+}
+
 func (c *Crawler) crawlBTMH() {
 	resp, ok := c.httpClient.Do(
 		httpclient.NewRequest(
@@ -243,7 +318,8 @@ func (c *Crawler) crawlBTMH() {
 		})
 
 		updatedAt := strings.TrimSpace(doc.Find("p.note").Text())
-		updatedAt = strings.TrimPrefix(updatedAt, "Cập nhập lúc: ")
+		updatedAt = strings.ReplaceAll(updatedAt, "(Cập nhập lúc: ", "")
+		updatedAt = strings.ReplaceAll(updatedAt, ") (đơn vị tính: đồng/chỉ)", "")
 
 		c.Boards["btmh"] = &GoldPriceBoard{
 			Brand:     "Bảo Tín Mạnh Hải",

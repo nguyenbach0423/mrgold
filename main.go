@@ -16,9 +16,6 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-//	"https://btmc.vn/bieu-do-gia-vang.html?t=ngay&srsltid=AfmBOopkLFTaGSDib4E6WuWUNcG1Z5Q9vmfqzNBuJUHwlCoYX66i8HPl"
-//	"https://baotinmanhhai.vn/gia-vang-hom-nay"
-
 func main() {
 	httpClient := httpclient.NewClient(
 		httpclient.WithTimeout(5*time.Second),
@@ -93,68 +90,3 @@ func main() {
 func init() {
 	zerolog.TimeFieldFormat = time.DateTime
 }
-
-//func crawlBTMC(r *colly.Response) {
-//	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(r.Body))
-//	if err != nil {
-//		log.Error().Err(err).Str("url", r.Request.URL.String()).Send()
-//		return
-//	}
-//
-//	var golds []Gold
-//
-//	doc.Find("table.bd_price_home tr").Each(func(_ int, s *goquery.Selection) {
-//		var cells []string
-//
-//		s.Find("td").Each(func(_ int, s *goquery.Selection) {
-//			cells = append(cells, strings.TrimSpace(s.Text()))
-//		})
-//
-//		if len(cells) == 0 {
-//			return
-//		}
-//
-//		var name = ""
-//		var buyPrice = ""
-//		var sellPrice = ""
-//
-//		pattern := regexp.MustCompile("^[0-9]+$")
-//
-//		if len(cells) == 5 {
-//			name = strings.ReplaceAll(cells[1], "  ", " ")
-//			if pattern.MatchString(cells[3]) {
-//				buyPrice = cells[3]
-//			}
-//			if pattern.MatchString(cells[4]) {
-//				sellPrice = cells[4]
-//			}
-//		} else if len(cells) == 4 {
-//			name = strings.ReplaceAll(cells[0], "  ", " ")
-//			if pattern.MatchString(cells[2]) {
-//				buyPrice = cells[2]
-//			}
-//			if pattern.MatchString(cells[3]) {
-//				sellPrice = cells[3]
-//			}
-//		}
-//
-//		golds = append(golds, Gold{
-//			Name:      name,
-//			BuyPrice:  buyPrice,
-//			SellPrice: sellPrice,
-//		})
-//	})
-//
-//	location, err := time.LoadLocation("Asia/Ho_Chi_Minh")
-//	if err != nil {
-//		log.Error().Err(err).Send()
-//		return
-//	}
-//	updatedAt := time.Now().In(location).Format(time.DateTime)
-//
-//	goldPriceBoards["btmc"] = &GoldPriceBoard{
-//		Brand:     "BẢO TÍN MINH CHÂU",
-//		Golds:     golds,
-//		UpdatedAt: updatedAt,
-//	}
-//}
