@@ -260,8 +260,12 @@ func (c *Crawler) crawlBTMC() {
 				}
 			}
 
+			if strings.ToLower(name) == "vàng nguyên liệu" {
+				return
+			}
+
 			gold := Gold{
-				Name:      name,
+				Name:      convertGoldNameBTMC(name),
 				BuyPrice:  convertPrice(buyPrice),
 				SellPrice: convertPrice(sellPrice),
 			}
@@ -350,4 +354,15 @@ func convertPrice(s string) string {
 
 	result = append([]string{s}, result...)
 	return strings.Join(result, ".")
+}
+
+func convertGoldNameBTMC(s string) string {
+	s = strings.ToLower(s)
+	s = strings.ToUpper(string(s[0])) + s[1:]
+	s = strings.ReplaceAll(s, "vrtl", "VRTL")
+	s = strings.ReplaceAll(s, "bảo tín minh châu", "Bảo Tín Minh Châu")
+	s = strings.ReplaceAll(s, "sjc", "SJC")
+	s = strings.ReplaceAll(s, "vàng rồng thăng long", "Vàng Rồng Thăng Long")
+
+	return s
 }
