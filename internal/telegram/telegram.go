@@ -2,27 +2,25 @@ package telegram
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 
+	"github.com/mrgold/internal/crawler"
 	"github.com/mrgold/internal/httpclient"
 	"github.com/rs/zerolog/log"
 )
 
-var DefaultHeaders = map[string]string{
-	"User-Agent":   "MrGoldBot/1.0 (+https://t.me/mr_gold_vn_bot)",
-	"Accept":       "application/json",
-	"Content-Type": "application/json",
-}
-
 type Client struct {
 	httpClient *httpclient.Client
 	baseURL    string
+	crawler    *crawler.Crawler
 }
 
 func NewClient(opts ...func(*Client)) *Client {
 	c := &Client{
 		httpClient: httpclient.NewClient(),
+		crawler:    crawler.NewCrawler(),
 	}
 
 	for _, opt := range opts {
@@ -41,6 +39,12 @@ func WithHTTPClient(httpClient *httpclient.Client) func(*Client) {
 func WithBaseURL(baseURL string) func(*Client) {
 	return func(c *Client) {
 		c.baseURL = baseURL
+	}
+}
+
+func WithCrawler(crawler *crawler.Crawler) func(*Client) {
+	return func(c *Client) {
+		c.crawler = crawler
 	}
 }
 
@@ -71,9 +75,49 @@ type CallbackQuery struct {
 	Data    string   `json:"data"`
 }
 
-func (c *Client) HandleUpdate(update *Update) {
-	go c.sendMessage(update.Message.Text, map[string]interface{}{
-		"chat_id": update.Message.Chat.Id,
+func (c *Client) SetWebhook(publicDomain string) bool {
+	reqBody, err := json.Marshal(map[string]string{
+		"url": publicDomain + "/webhook",
+	})
+	if err != nil {
+		log.Error().Err(err).Send()
+		return false
+	}
+
+	_, ok := c.httpClient.Do(
+		httpclient.NewRequest(
+			http.MethodPost,
+			c.baseURL+"/setWebhook",
+			httpclient.WithHeaders(httpclient.DefaultHeaders),
+			httpclient.WithBody(reqBody),
+		),
+	)
+
+	return ok
+}
+
+func (c *Client) SetMyCommands() bool {
+	reqBody, err := json.Marshal(loadMenu())
+	if err != nil {
+		log.Error().Err(err).Send()
+		return false
+	}
+
+	_, ok := c.httpClient.Do(
+		httpclient.NewRequest(
+			http.MethodPost,
+			c.baseURL+"/setMyCommands",
+			httpclient.WithHeaders(httpclient.DefaultHeaders),
+			httpclient.WithBody(reqBody),
+		),
+	)
+
+	return ok
+}
+
+func (c *Client) HandleMessage(message *Message) {
+	go c.sendMessage(message.Text, map[string]interface{}{
+		"chat_id": message.Chat.Id,
 	})
 }
 
@@ -81,13 +125,13 @@ func (c *Client) sendMessage(command string, extras map[string]interface{}) {
 	var err error
 
 	var reqBody []byte
-	if command == "/gold live" {
+	if command == "/gold_live" {
 		reqBody, err = json.Marshal(loadGoldBranchOptions(extras))
 		if err != nil {
 			log.Error().Err(err).Send()
 			return
 		}
-	} else if command == "/gold alert" || command == "/gold history" || command == "/feedback" || command == "/donate" {
+	} else if command == "/gold_alert" || command == "/gold_history" || command == "/feedback" || command == "/donate" {
 		reqBody, err = json.Marshal(loadComingSoon(extras))
 		if err != nil {
 			log.Error().Err(err).Send()
@@ -105,7 +149,7 @@ func (c *Client) sendMessage(command string, extras map[string]interface{}) {
 		httpclient.NewRequest(
 			http.MethodPost,
 			c.baseURL+"/sendMessage",
-			httpclient.WithHeaders(DefaultHeaders),
+			httpclient.WithHeaders(httpclient.DefaultHeaders),
 			httpclient.WithBody(reqBody),
 		),
 	)
@@ -133,7 +177,7 @@ func (c *Client) answerCallbackQuery(id string) {
 		httpclient.NewRequest(
 			http.MethodPost,
 			c.baseURL+"/answerCallbackQuery",
-			httpclient.WithHeaders(DefaultHeaders),
+			httpclient.WithHeaders(httpclient.DefaultHeaders),
 			httpclient.WithBody(reqBody),
 		),
 	)
@@ -143,19 +187,23 @@ func (c *Client) editMessageText(command string, extras map[string]interface{}) 
 	var err error
 
 	var reqBody []byte
-	if command == "/next GoldPriceBoard BTMH" {
-		reqBody, err = json.Marshal(loadGoldPriceBoard(extras))
+	switch command {
+	case "/next_price_board_sjc", "/next_price_board_doji", "/next_price_board_pnj", "/next_price_board_btmc", "/next_price_board_btmh":
+		brand := strings.ReplaceAll(command, "/next_price_board_", "")
+		board := c.crawler.Boards[brand]
+
+		reqBody, err = json.Marshal(loadGoldPriceBoard(board, extras))
 		if err != nil {
 			log.Error().Err(err).Send()
 			return
 		}
-	} else if command == "/back GoldBranchOptions" {
+	case "/back_branch_options":
 		reqBody, err = json.Marshal(loadGoldBranchOptions(extras))
 		if err != nil {
 			log.Error().Err(err).Send()
 			return
 		}
-	} else {
+	default:
 		return
 	}
 
@@ -163,10 +211,22 @@ func (c *Client) editMessageText(command string, extras map[string]interface{}) 
 		httpclient.NewRequest(
 			http.MethodPost,
 			c.baseURL+"/editMessageText",
-			httpclient.WithHeaders(DefaultHeaders),
+			httpclient.WithHeaders(httpclient.DefaultHeaders),
 			httpclient.WithBody(reqBody),
 		),
 	)
+}
+
+func loadMenu() map[string]interface{} {
+	return map[string]interface{}{
+		"commands": []map[string]string{
+			{"command": "/gold", "description": "tra cứu giá vàng mới nhất"},
+			{"command": "/gold_alert", "description": "cảnh báo biến động giá vàng"},
+			{"command": "/gold_history", "description": "tra cứu lịch sử giá vàng"},
+			{"command": "/feedback", "description": "gửi góp ý cải thiện bot"},
+			{"command": "/donate", "description": "☕︎ give me a coffee cup"},
+		},
+	}
 }
 
 func loadIntro(extras map[string]interface{}) map[string]interface{} {
@@ -182,20 +242,13 @@ func loadIntro(extras map[string]interface{}) map[string]interface{} {
 	builder.WriteString("╲┣━━━━━━┫\n")
 	builder.WriteString("\n")
 	builder.WriteString("<b>Tra cứu và cảnh báo giá vàng</b>\n")
-	builder.WriteString("\n")
 	builder.WriteString("<code><b>/gold live</b></code> - <i>tra cứu giá vàng mới nhất</i>\n")
 	builder.WriteString("<code><b>/gold alert</b></code> - <i>cảnh báo biến động giá vàng</i>\n")
 	builder.WriteString("<code><b>/gold history</b></code> - <i>tra cứu lịch sử giá vàng</i>\n")
 	builder.WriteString("\n")
 	builder.WriteString("<b>Góp ý và ủng hộ</b>\n")
-	builder.WriteString("\n")
 	builder.WriteString("<code><b>/feedback</b></code> - <i>gửi góp ý cải thiện bot</i>\n")
 	builder.WriteString("<code><b>/donate</b></code> - <i>☕︎ give me a coffee cup</i>\n")
-	builder.WriteString("\n")
-	builder.WriteString("<b>Tiện ích</b>\n")
-	builder.WriteString("\n")
-	builder.WriteString("<code><b>/menu pin</b></code> - <i>ghim menu để thao tác nhanh</i>\n")
-	builder.WriteString("<code><b>/menu unpin</b></code> - <i>gỡ menu khi không cần thiết</i>\n")
 	builder.WriteString("\n")
 	builder.WriteString("<b>Hãy ra lệnh cho tôi!</b>\n")
 
@@ -220,25 +273,25 @@ func loadGoldBranchOptions(extras map[string]interface{}) map[string]interface{}
 				[]interface{}{
 					map[string]interface{}{
 						"text":          "SJC",
-						"callback_data": "/next GoldPriceBoard SJC",
+						"callback_data": "/next_price_board_sjc",
 					},
 					map[string]interface{}{
 						"text":          "DOJI",
-						"callback_data": "/next GoldPriceBoard DOJI",
+						"callback_data": "/next_price_board_doji",
 					},
 					map[string]interface{}{
 						"text":          "PNJ",
-						"callback_data": "/next GoldPriceBoard PNJ",
+						"callback_data": "/next_price_board_pnj",
 					},
 				},
 				[]interface{}{
 					map[string]interface{}{
 						"text":          "Bảo Tín Minh Châu",
-						"callback_data": "/next GoldPriceBoard BTMC",
+						"callback_data": "/next_price_board_btmc",
 					},
 					map[string]interface{}{
 						"text":          "Bảo Tín Mạnh Hải",
-						"callback_data": "/next GoldPriceBoard BTMH",
+						"callback_data": "/next_price_board_btmh",
 					},
 				},
 			},
@@ -252,18 +305,20 @@ func loadGoldBranchOptions(extras map[string]interface{}) map[string]interface{}
 	return goldBranchOptions
 }
 
-func loadGoldPriceBoard(extras map[string]interface{}) map[string]interface{} {
+func loadGoldPriceBoard(board *crawler.GoldPriceBoard, extras map[string]interface{}) map[string]interface{} {
 	builder := strings.Builder{}
 
-	builder.WriteString("<b>Bảng giá vàng tại Bảo Tín Mạnh Hải:</b>")
-	builder.WriteString("\n\n")
-	builder.WriteString("✦ <b>Nhẫn ép vỉ Kim Gia Bảo</b> - <i>Mua:</i> <b>14.800.000</b> - <i>Bán:</i> <b>15.100.000</b>")
-	builder.WriteString("\n")
-	builder.WriteString("✦ <b>Nhẫn ép vỉ Kim Gia Bảo</b> - <i>Mua:</i> <b>14.800.000</b> - <i>Bán:</i> <b>15.100.000</b>")
-	builder.WriteString("\n")
-	builder.WriteString("✦ <b>Nhẫn ép vỉ Kim Gia Bảo</b> - <i>Mua:</i> <b>14.800.000</b> - <i>Bán:</i> <b>15.100.000</b>")
-	builder.WriteString("\n\n")
-	builder.WriteString("<i>(Cập nhật lúc: 18:00:00 18/11/2025</i> - <i>Đơn vị tính: đồng/chỉ)</i>")
+	if board == nil || len(board.Golds) == 0 {
+		builder.WriteString("<b>Giá vàng đang được cập nhật. Vui lòng thử lại trong giây lát!</b>")
+	} else {
+		builder.WriteString(fmt.Sprintf("<b>Bảng giá vàng tại %s:</b>\n", board.Brand))
+		builder.WriteString("\n")
+		for _, gold := range board.Golds {
+			builder.WriteString(fmt.Sprintf("✦ <b>%s</b> - <i>Mua:</i> <b>%s</b> - <i>Bán:</i> <b>%s</b>\n", gold.Name, gold.BuyPrice, gold.SellPrice))
+		}
+		builder.WriteString("\n")
+		builder.WriteString(fmt.Sprintf("<i>(Cập nhật lúc: %s</i> - <i>Đơn vị tính: đồng/chỉ)</i>", board.UpdatedAt))
+	}
 
 	goldPriceBoard := map[string]interface{}{
 		"parse_mode": "HTML",
@@ -273,7 +328,7 @@ func loadGoldPriceBoard(extras map[string]interface{}) map[string]interface{} {
 				[]interface{}{
 					map[string]interface{}{
 						"text":          "<< Quay lại danh sách thương hiệu",
-						"callback_data": "/back GoldBranchOptions",
+						"callback_data": "/back_branch_options",
 					},
 				},
 			},
