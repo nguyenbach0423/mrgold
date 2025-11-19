@@ -232,8 +232,6 @@ func loadMenu() map[string]interface{} {
 func loadIntro(extras map[string]interface{}) map[string]interface{} {
 	builder := strings.Builder{}
 
-	builder.WriteString("<b>Hãy ra lệnh cho tôi!</b>")
-	builder.WriteString("\n")
 	builder.WriteString("<b>Tra cứu và cảnh báo giá vàng</b>\n")
 	builder.WriteString("\n")
 	builder.WriteString("<code><b>/gold_live</b></code> - <i>tra cứu giá vàng mới nhất</i>\n")
