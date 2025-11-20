@@ -59,6 +59,8 @@ func main() {
 
 	log.Info().Msg("telegram bot was configured")
 
+	sheet.Sync()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	var wg sync.WaitGroup
 
@@ -70,7 +72,7 @@ func main() {
 			select {
 			case <-ctx.Done():
 				return
-			case <-time.After(1 * time.Minute):
+			case <-time.After(5 * time.Minute):
 			}
 
 			sheet.Sync()
