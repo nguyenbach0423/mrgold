@@ -72,7 +72,7 @@ func main() {
 			select {
 			case <-ctx.Done():
 				return
-			case <-time.After(1 * time.Minute):
+			case <-time.After(5 * time.Minute):
 			}
 
 			sheet.Sync()
