@@ -2,6 +2,7 @@ package googlesheet
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/mrgold/internal/store"
@@ -91,4 +92,6 @@ func (gs *GoogleSheet) syncHistories() {
 	}
 
 	_ = gs.service.Spreadsheets.Values.Update(os.Getenv("GOOGLE_SHEET_ID"), "histories!A1", vr)
+
+	fmt.Println(vr)
 }
