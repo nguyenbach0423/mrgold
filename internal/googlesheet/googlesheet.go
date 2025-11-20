@@ -56,7 +56,7 @@ func (gs *GoogleSheet) fetchBoards() {
 
 	var boards = make(map[string]*store.GoldPriceBoard)
 	for _, value := range vr.Values {
-		log.Info().Interface("value", value).Send()
+		log.Info().Interface("value", value).Msg("no")
 
 		if len(value) < 6 {
 			continue
@@ -102,7 +102,7 @@ func (gs *GoogleSheet) fetchHistories() {
 
 	var histories = make(map[string]map[string]*store.GoldPriceBoard)
 	for _, value := range vr.Values {
-		log.Info().Interface("value", value).Send()
+		log.Info().Interface("value", value).Msg("yes")
 
 		if len(value) < 6 {
 			continue
