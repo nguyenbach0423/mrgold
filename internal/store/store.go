@@ -121,7 +121,7 @@ func (s *Store) GetHistories() map[string]map[string]*GoldPriceBoard {
 		for sk, sv := range v {
 			history[sk] = sv
 		}
-		histories[k] = v
+		histories[k] = history
 	}
 	return histories
 }
