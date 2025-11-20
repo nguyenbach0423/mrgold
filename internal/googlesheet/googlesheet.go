@@ -150,6 +150,7 @@ func (gs *GoogleSheet) fetchHistories() {
 			}
 		}
 	}
+	gs.store.SetHistories(histories)
 }
 
 func (gs *GoogleSheet) Sync() {
