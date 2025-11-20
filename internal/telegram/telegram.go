@@ -6,21 +6,21 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/mrgold/internal/crawler"
 	"github.com/mrgold/internal/httpclient"
+	"github.com/mrgold/internal/store"
 	"github.com/rs/zerolog/log"
 )
 
 type Client struct {
 	httpClient *httpclient.Client
 	baseURL    string
-	crawler    *crawler.Crawler
+	store      *store.Store
 }
 
 func NewClient(opts ...func(*Client)) *Client {
 	c := &Client{
 		httpClient: httpclient.NewClient(),
-		crawler:    crawler.NewCrawler(),
+		store:      store.NewStore(),
 	}
 
 	for _, opt := range opts {
@@ -42,9 +42,9 @@ func WithBaseURL(baseURL string) func(*Client) {
 	}
 }
 
-func WithCrawler(crawler *crawler.Crawler) func(*Client) {
+func WithStore(store *store.Store) func(*Client) {
 	return func(c *Client) {
-		c.crawler = crawler
+		c.store = store
 	}
 }
 
@@ -190,7 +190,7 @@ func (c *Client) editMessageText(command string, extras map[string]interface{}) 
 	switch command {
 	case "/next_price_board_sjc", "/next_price_board_doji", "/next_price_board_pnj", "/next_price_board_btmc", "/next_price_board_btmh":
 		brand := strings.ReplaceAll(command, "/next_price_board_", "")
-		board := c.crawler.Boards[brand]
+		board := c.store.GetBoard(brand)
 
 		reqBody, err = json.Marshal(loadGoldPriceBoard(board, extras))
 		if err != nil {
@@ -296,13 +296,13 @@ func loadGoldBranchOptions(extras map[string]interface{}) map[string]interface{}
 	return goldBranchOptions
 }
 
-func loadGoldPriceBoard(board *crawler.GoldPriceBoard, extras map[string]interface{}) map[string]interface{} {
+func loadGoldPriceBoard(board *store.GoldPriceBoard, extras map[string]interface{}) map[string]interface{} {
 	builder := strings.Builder{}
 
 	if board == nil || len(board.Golds) == 0 {
 		builder.WriteString("<b>Giá vàng đang được cập nhật. Vui lòng thử lại trong giây lát!</b>")
 	} else {
-		builder.WriteString(fmt.Sprintf("<b>Bảng giá vàng tại %s:</b>\n", board.Brand))
+		builder.WriteString(fmt.Sprintf("<b>Bảng giá vàng tại %s:</b>\n", board.BrandName))
 		builder.WriteString("\n")
 		for _, gold := range board.Golds {
 			builder.WriteString(fmt.Sprintf("✦ <b>%s</b>", gold.Name))

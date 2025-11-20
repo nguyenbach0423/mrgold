@@ -59,7 +59,7 @@ func (s *Server) Stop() bool {
 		return true
 	}
 
-	c, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if err := s.httpServer.Shutdown(c); err != nil {

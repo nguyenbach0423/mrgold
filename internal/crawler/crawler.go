@@ -8,22 +8,25 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mrgold/internal/httpclient"
+	"github.com/mrgold/internal/store"
 	"github.com/rs/zerolog/log"
 )
 
 type Crawler struct {
+	mu         sync.RWMutex
 	httpClient *httpclient.Client
-	Boards     map[string]*GoldPriceBoard
+	store      *store.Store
 }
 
 func NewCrawler(opts ...func(*Crawler)) *Crawler {
 	c := &Crawler{
 		httpClient: httpclient.NewClient(),
-		Boards:     make(map[string]*GoldPriceBoard),
+		store:      store.NewStore(),
 	}
 
 	for _, opt := range opts {
@@ -39,16 +42,10 @@ func WithHTTPClient(httpClient *httpclient.Client) func(*Crawler) {
 	}
 }
 
-type Gold struct {
-	Name      string
-	BuyPrice  string
-	SellPrice string
-}
-
-type GoldPriceBoard struct {
-	Brand     string
-	Golds     []Gold
-	UpdatedAt string
+func WithStore(store *store.Store) func(*Crawler) {
+	return func(c *Crawler) {
+		c.store = store
+	}
 }
 
 func (c *Crawler) Crawl() {
@@ -85,24 +82,24 @@ func (c *Crawler) crawlSJC() {
 			return
 		}
 
-		var golds []Gold
+		var golds []store.Gold
 
 		for _, gold := range goldPriceBoard.Data {
 			if gold.Branch != "Hồ Chí Minh" || gold.Id == 129 || gold.Id == 210 {
 				continue
 			}
-			golds = append(golds, Gold{
+			golds = append(golds, store.Gold{
 				Name:      gold.Name,
 				BuyPrice:  convertStringPrice(gold.BuyPrice),
 				SellPrice: convertStringPrice(gold.SellPrice),
 			})
 		}
 
-		c.Boards["sjc"] = &GoldPriceBoard{
-			Brand:     "SJC",
+		c.store.SetBoard("sjc", &store.GoldPriceBoard{
+			BrandName: "SJC",
 			Golds:     golds,
 			UpdatedAt: goldPriceBoard.UpdatedAt,
-		}
+		})
 	}
 }
 
@@ -140,10 +137,10 @@ func (c *Crawler) crawlDOJI() {
 			return
 		}
 
-		var golds []Gold
+		var golds []store.Gold
 
 		doc.Find("table.goldprice-view tbody tr").Each(func(_ int, s *goquery.Selection) {
-			gold := Gold{}
+			gold := store.Gold{}
 
 			name := strings.TrimSpace(s.Find("td.first span.title").Text())
 			gold.Name = convertGoldNameDOJI(name)
@@ -160,11 +157,11 @@ func (c *Crawler) crawlDOJI() {
 		updatedAt := strings.TrimSpace(doc.Find("span.update-time").Text())
 		updatedAt = strings.ReplaceAll(updatedAt, "Cập nhập lúc: ", "")
 
-		c.Boards["doji"] = &GoldPriceBoard{
-			Brand:     "DOJI",
+		c.store.SetBoard("doji", &store.GoldPriceBoard{
+			BrandName: "DOJI",
 			Golds:     golds,
 			UpdatedAt: updatedAt,
-		}
+		})
 	}
 }
 
@@ -196,7 +193,7 @@ func (c *Crawler) crawlPNJ() {
 			return
 		}
 
-		var golds []Gold
+		var golds []store.Gold
 
 		codes := []string{"SJC", "N24K", "KB", "TL", "PNJ", "24K", "999", "99", "75", "58.5", "41"}
 		for _, gold := range goldPriceBoard.Data {
@@ -204,7 +201,7 @@ func (c *Crawler) crawlPNJ() {
 				continue
 			}
 
-			golds = append(golds, Gold{
+			golds = append(golds, store.Gold{
 				Name:      gold.Name,
 				BuyPrice:  convertNumericPrice(gold.BuyPrice),
 				SellPrice: convertNumericPrice(gold.SellPrice),
@@ -213,11 +210,11 @@ func (c *Crawler) crawlPNJ() {
 
 		t, _ := time.Parse("02/01/2006 15:04:05", goldPriceBoard.UpdatedAt)
 
-		c.Boards["pnj"] = &GoldPriceBoard{
-			Brand:     "PNJ",
+		c.store.SetBoard("pnj", &store.GoldPriceBoard{
+			BrandName: "PNJ",
 			Golds:     golds,
 			UpdatedAt: t.Format("15:04 02/01/2006"),
-		}
+		})
 	}
 }
 
@@ -237,7 +234,7 @@ func (c *Crawler) crawlBTMC() {
 			return
 		}
 
-		var golds []Gold
+		var golds []store.Gold
 
 		doc.Find("table.bd_price_home tr").Each(func(_ int, s *goquery.Selection) {
 			var cells []string
@@ -278,7 +275,7 @@ func (c *Crawler) crawlBTMC() {
 				return
 			}
 
-			gold := Gold{
+			gold := store.Gold{
 				Name:      convertGoldNameBTMC(name),
 				BuyPrice:  convertStringPrice(buyPrice),
 				SellPrice: convertStringPrice(sellPrice),
@@ -292,11 +289,11 @@ func (c *Crawler) crawlBTMC() {
 
 		t, _ := time.Parse("02/01/2006 15:04", updatedAt)
 
-		c.Boards["btmc"] = &GoldPriceBoard{
-			Brand:     "Bảo Tín Minh Châu",
+		c.store.SetBoard("btmc", &store.GoldPriceBoard{
+			BrandName: "Bảo Tín Minh Châu",
 			Golds:     golds,
 			UpdatedAt: t.Format("15:04 02/01/2006"),
-		}
+		})
 	}
 }
 
@@ -316,7 +313,7 @@ func (c *Crawler) crawlBTMH() {
 			return
 		}
 
-		var golds []Gold
+		var golds []store.Gold
 
 		doc.Find("table.gold-table-content tbody tr").Each(func(_ int, s *goquery.Selection) {
 			var cells []string
@@ -329,7 +326,7 @@ func (c *Crawler) crawlBTMH() {
 				return
 			}
 
-			gold := Gold{
+			gold := store.Gold{
 				Name:      cells[0],
 				BuyPrice:  cells[1],
 				SellPrice: cells[2],
@@ -342,11 +339,11 @@ func (c *Crawler) crawlBTMH() {
 		updatedAt = strings.ReplaceAll(updatedAt, "(Cập nhật lúc ", "")
 		updatedAt = strings.ReplaceAll(updatedAt, ") (đơn vị tính: đồng/chỉ)", "")
 
-		c.Boards["btmh"] = &GoldPriceBoard{
-			Brand:     "Bảo Tín Mạnh Hải",
+		c.store.SetBoard("btmh", &store.GoldPriceBoard{
+			BrandName: "Bảo Tín Mạnh Hải",
 			Golds:     golds,
 			UpdatedAt: updatedAt,
-		}
+		})
 	}
 }
 

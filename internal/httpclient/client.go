@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	DefaultTimeout = 5 * time.Second
+	DefaultTimeout = 10 * time.Second
 )
 
 var DefaultHeaders = map[string]string{

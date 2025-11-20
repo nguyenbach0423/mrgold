@@ -9,14 +9,26 @@ import (
 	"time"
 
 	"github.com/mrgold/internal/crawler"
+	"github.com/mrgold/internal/googlesheet"
 	"github.com/mrgold/internal/httpclient"
 	"github.com/mrgold/internal/httpserver"
+	"github.com/mrgold/internal/store"
 	"github.com/mrgold/internal/telegram"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
 func main() {
+	s := store.NewStore()
+
+	sheet := googlesheet.NewGoogleSheet(
+		os.Getenv("GOOGLE_SHEET_CREDENTIALS"),
+		googlesheet.WithStore(s),
+	)
+	if sheet == nil {
+		os.Exit(1)
+	}
+
 	httpClient := httpclient.NewClient(
 		httpclient.WithTimeout(5*time.Second),
 		httpclient.WithRetryConfig(&httpclient.RetryConfig{
@@ -28,12 +40,13 @@ func main() {
 
 	c := crawler.NewCrawler(
 		crawler.WithHTTPClient(httpClient),
+		crawler.WithStore(s),
 	)
 
 	telegramClient := telegram.NewClient(
 		telegram.WithHTTPClient(httpClient),
 		telegram.WithBaseURL(os.Getenv("TELEGRAM_BOT_BASE_URL")),
-		telegram.WithCrawler(c),
+		telegram.WithStore(s),
 	)
 
 	if ok := telegramClient.SetWebhook(os.Getenv("PUBLIC_DOMAIN")); !ok {
@@ -54,6 +67,21 @@ func main() {
 		defer wg.Done()
 
 		for {
+			sheet.SyncData()
+
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(1 * time.Minute):
+			}
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		for {
 			c.Crawl()
 
 			select {
@@ -64,13 +92,13 @@ func main() {
 		}
 	}()
 
-	s := httpserver.NewServer(
+	httpServer := httpserver.NewServer(
 		os.Getenv("PORT"),
 		httpserver.WithTelegramClient(telegramClient),
 	)
 
 	go func() {
-		if ok := s.Start(); !ok {
+		if ok := httpServer.Start(); !ok {
 			os.Exit(1)
 		}
 	}()
@@ -82,7 +110,9 @@ func main() {
 	cancel()
 	wg.Wait()
 
-	if ok := s.Stop(); !ok {
+	sheet.SyncData()
+
+	if ok := httpServer.Stop(); !ok {
 		os.Exit(1)
 	}
 }
