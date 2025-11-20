@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/mrgold/internal/crawler"
 	"github.com/mrgold/internal/googlesheet"
 	"github.com/mrgold/internal/httpclient"
 	"github.com/mrgold/internal/httpserver"
@@ -37,10 +38,10 @@ func main() {
 		}),
 	)
 
-	//c := crawler.NewCrawler(
-	//	crawler.WithHTTPClient(httpClient),
-	//	crawler.WithStore(s),
-	//)
+	c := crawler.NewCrawler(
+		crawler.WithHTTPClient(httpClient),
+		crawler.WithStore(s),
+	)
 
 	telegramClient := telegram.NewClient(
 		telegram.WithHTTPClient(httpClient),
@@ -83,7 +84,7 @@ func main() {
 		defer wg.Done()
 
 		for {
-			//c.Crawl()
+			c.Crawl()
 
 			select {
 			case <-ctx.Done():
