@@ -67,13 +67,13 @@ func main() {
 		defer wg.Done()
 
 		for {
-			sheet.SyncData()
-
 			select {
 			case <-ctx.Done():
 				return
 			case <-time.After(1 * time.Minute):
 			}
+
+			sheet.Sync()
 		}
 	}()
 
@@ -110,7 +110,7 @@ func main() {
 	cancel()
 	wg.Wait()
 
-	sheet.SyncData()
+	sheet.Sync()
 
 	if ok := httpServer.Stop(); !ok {
 		os.Exit(1)
