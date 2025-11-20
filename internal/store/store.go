@@ -40,18 +40,39 @@ func (s *Store) SetBoard(brand string, newBoard *GoldPriceBoard) {
 			s.setHistory(brand, newBoard)
 		}
 	}
+
+	s.boards[brand] = newBoard
 }
 
-func (s *Store) setHistory(brand string, newBoard *GoldPriceBoard) {
-	s.boards[brand] = newBoard
+func (s *Store) SetBoards(boards map[string]*GoldPriceBoard) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for brand, board := range boards {
+		s.boards[brand] = board
+	}
+}
+
+func (s *Store) setHistory(brand string, board *GoldPriceBoard) {
 	if history := s.histories[brand]; history == nil {
 		history = make(map[string]*GoldPriceBoard)
 
-		history[newBoard.UpdatedAt] = newBoard
+		history[board.UpdatedAt] = board
 		s.histories[brand] = history
 	} else {
-		if _, exist := history[newBoard.UpdatedAt]; !exist {
-			history[newBoard.UpdatedAt] = newBoard
+		if _, exist := history[board.UpdatedAt]; !exist {
+			history[board.UpdatedAt] = board
+		}
+	}
+}
+
+func (s *Store) SetHistories(histories map[string]map[string]*GoldPriceBoard) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for brand, history := range histories {
+		for _, board := range history {
+			s.setHistory(brand, board)
 		}
 	}
 }
