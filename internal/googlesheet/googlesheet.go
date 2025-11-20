@@ -65,7 +65,10 @@ func (gs *GoogleSheet) syncBoards() {
 		Values: values,
 	}
 
-	_ = gs.service.Spreadsheets.Values.Update(os.Getenv("GOOGLE_SHEET_ID"), "boards!A1", vr)
+	_, err := gs.service.Spreadsheets.Values.Update(os.Getenv("GOOGLE_SHEET_ID"), "boards!A1", vr).Do()
+	if err != nil {
+		log.Error().Err(err).Send()
+	}
 }
 
 func (gs *GoogleSheet) syncHistories() {
@@ -90,5 +93,8 @@ func (gs *GoogleSheet) syncHistories() {
 		Values: values,
 	}
 
-	_ = gs.service.Spreadsheets.Values.Update(os.Getenv("GOOGLE_SHEET_ID"), "histories!A1", vr)
+	_, err := gs.service.Spreadsheets.Values.Update(os.Getenv("GOOGLE_SHEET_ID"), "histories!A1", vr).Do()
+	if err != nil {
+		log.Error().Err(err).Send()
+	}
 }
