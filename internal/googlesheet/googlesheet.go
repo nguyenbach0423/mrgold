@@ -56,7 +56,7 @@ func (gs *GoogleSheet) fetchBoards() {
 
 	var boards = make(map[string]*store.GoldPriceBoard)
 	for _, value := range vr.Values {
-		if len(value) < 6 {
+		if len(value) < 7 {
 			continue
 		}
 
