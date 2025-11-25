@@ -49,11 +49,11 @@ func WithStore(store *store.Store) func(*Crawler) {
 }
 
 func (c *Crawler) Crawl() {
-	go c.crawlSJC()
-	go c.crawlDOJI()
-	go c.crawlPNJ()
-	go c.crawlBTMC()
-	go c.crawlBTMH()
+	c.crawlSJC()
+	c.crawlDOJI()
+	c.crawlPNJ()
+	c.crawlBTMC()
+	c.crawlBTMH()
 }
 
 func (c *Crawler) crawlSJC() {
