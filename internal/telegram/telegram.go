@@ -97,7 +97,7 @@ func (c *Client) SetWebhook(publicDomain string) bool {
 }
 
 func (c *Client) SetMyCommands() bool {
-	reqBody, err := json.Marshal(loadMenu())
+	reqBody, err := json.Marshal(c.loadMenu())
 	if err != nil {
 		log.Error().Err(err).Send()
 		return false
@@ -126,25 +126,25 @@ func (c *Client) sendMessage(command string, extras map[string]interface{}) {
 
 	var reqBody []byte
 	if command == "/gold_live" {
-		reqBody, err = json.Marshal(loadLiveGoldBranchOptions(extras))
+		reqBody, err = json.Marshal(c.loadLiveGoldBranchOptions(extras))
 		if err != nil {
 			log.Error().Err(err).Send()
 			return
 		}
 	} else if command == "/gold_history" {
-		reqBody, err = json.Marshal(loadHistoricalGoldBranchOptions(extras))
+		reqBody, err = json.Marshal(c.loadHistoricalGoldBranchOptions(extras))
 		if err != nil {
 			log.Error().Err(err).Send()
 			return
 		}
 	} else if command == "/gold_alert" || command == "/feedback" || command == "/donate" {
-		reqBody, err = json.Marshal(loadComingSoon(extras))
+		reqBody, err = json.Marshal(c.loadComingSoon(extras))
 		if err != nil {
 			log.Error().Err(err).Send()
 			return
 		}
 	} else {
-		reqBody, err = json.Marshal(loadIntro(extras))
+		reqBody, err = json.Marshal(c.loadIntro(extras))
 		if err != nil {
 			log.Error().Err(err).Send()
 			return
@@ -198,13 +198,13 @@ func (c *Client) editMessageText(command string, extras map[string]interface{}) 
 		brand := strings.ReplaceAll(command, "/next_live_price_board_", "")
 		board := c.store.GetBoard(brand)
 
-		reqBody, err = json.Marshal(loadGoldPriceBoard(board, extras))
+		reqBody, err = json.Marshal(c.loadGoldPriceBoard(board, extras))
 		if err != nil {
 			log.Error().Err(err).Send()
 			return
 		}
-	case "/back_branch_options":
-		reqBody, err = json.Marshal(loadLiveGoldBranchOptions(extras))
+	case "/back_live_branch_options":
+		reqBody, err = json.Marshal(c.loadLiveGoldBranchOptions(extras))
 		if err != nil {
 			log.Error().Err(err).Send()
 			return
@@ -223,7 +223,7 @@ func (c *Client) editMessageText(command string, extras map[string]interface{}) 
 	)
 }
 
-func loadMenu() map[string]interface{} {
+func (c *Client) loadMenu() map[string]interface{} {
 	return map[string]interface{}{
 		"commands": []map[string]string{
 			{"command": "gold_live", "description": "Tra cứu giá vàng mới nhất"},
@@ -235,7 +235,7 @@ func loadMenu() map[string]interface{} {
 	}
 }
 
-func loadIntro(extras map[string]interface{}) map[string]interface{} {
+func (c *Client) loadIntro(extras map[string]interface{}) map[string]interface{} {
 	builder := strings.Builder{}
 
 	builder.WriteString("<b>Tra cứu và cảnh báo giá vàng</b>\n")
@@ -261,7 +261,7 @@ func loadIntro(extras map[string]interface{}) map[string]interface{} {
 	return intro
 }
 
-func loadLiveGoldBranchOptions(extras map[string]interface{}) map[string]interface{} {
+func (c *Client) loadLiveGoldBranchOptions(extras map[string]interface{}) map[string]interface{} {
 	goldBranchOptions := map[string]interface{}{
 		"parse_mode": "HTML",
 		"text":       "<b>Vui lòng chọn thương hiệu trong danh sách sau:</b>",
@@ -302,7 +302,7 @@ func loadLiveGoldBranchOptions(extras map[string]interface{}) map[string]interfa
 	return goldBranchOptions
 }
 
-func loadGoldPriceBoard(board *store.GoldPriceBoard, extras map[string]interface{}) map[string]interface{} {
+func (c *Client) loadGoldPriceBoard(board *store.GoldPriceBoard, extras map[string]interface{}) map[string]interface{} {
 	builder := strings.Builder{}
 
 	if board == nil || len(board.Golds) == 0 {
@@ -332,7 +332,7 @@ func loadGoldPriceBoard(board *store.GoldPriceBoard, extras map[string]interface
 				[]interface{}{
 					map[string]interface{}{
 						"text":          "<< Quay lại danh sách thương hiệu",
-						"callback_data": "/back_branch_options",
+						"callback_data": "/back_live_branch_options",
 					},
 				},
 			},
@@ -346,10 +346,10 @@ func loadGoldPriceBoard(board *store.GoldPriceBoard, extras map[string]interface
 	return goldPriceBoard
 }
 
-func loadHistoricalGoldBranchOptions(extras map[string]interface{}) map[string]interface{} {
+func (c *Client) loadHistoricalGoldBranchOptions(extras map[string]interface{}) map[string]interface{} {
 	goldBranchOptions := map[string]interface{}{
 		"parse_mode": "HTML",
-		"text":       "<b>Vui lòng chọn thương hiệu để xem lịch sử:</b>",
+		"text":       "<b>Bạn muốn tra cứu lịch sử của thương hiệu nào?</b>",
 		"reply_markup": map[string]interface{}{
 			"inline_keyboard": []interface{}{
 				[]interface{}{
@@ -387,7 +387,43 @@ func loadHistoricalGoldBranchOptions(extras map[string]interface{}) map[string]i
 	return goldBranchOptions
 }
 
-func loadComingSoon(extras map[string]interface{}) map[string]interface{} {
+func (c *Client) loadHistoricalProductOptions(brand string, extras map[string]interface{}) map[string]interface{} {
+	golds := c.store.GetBoard(brand).Golds
+
+	keyboard := make([]interface{}, 0, len(golds))
+	for _, gold := range golds {
+		keyboard = append(keyboard, []interface{}{
+			map[string]interface{}{
+				"text":          gold.Name,
+				"callback_data": fmt.Sprintf("/next_historical_time_range_%s", gold.Name),
+			},
+		})
+	}
+
+	productOptions := map[string]interface{}{
+		"parse_mode": "HTML",
+		"text":       "<b>Bạn muốn tra cứu lịch sử của sản phẩm nào?</b>",
+		"reply_markup": map[string]interface{}{
+			"inline_keyboard": []interface{}{
+				keyboard,
+				[]interface{}{
+					map[string]interface{}{
+						"text":          "<< Quay lại danh sách thương hiệu",
+						"callback_data": "/back_historical_branch_options",
+					},
+				},
+			},
+		},
+	}
+
+	for k, v := range extras {
+		productOptions[k] = v
+	}
+
+	return productOptions
+}
+
+func (c *Client) loadComingSoon(extras map[string]interface{}) map[string]interface{} {
 	comingSoon := map[string]interface{}{
 		"parse_mode": "HTML",
 		"text":       "<b>Tính năng sẽ sớm được ra mắt!</b>",
