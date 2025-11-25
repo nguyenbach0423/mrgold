@@ -540,62 +540,91 @@ func (c *Client) loadHistoricalGoldPrice(brand string, product string, timeRange
 		days = append(days, day)
 	}
 
-	for _, day := range days {
-		builder.WriteString(fmt.Sprintf("%s\n", day))
+	results := make(map[string]struct {
+		Time      string
+		BrandName string
+		Gold      *store.Gold
+	})
+
+	history := c.store.GetHistory(brand)
+	for k, v := range history {
+		parts := strings.Split(k, " ")
+		if slices.Contains(days, parts[1]) {
+			var gold *store.Gold
+			for _, g := range v.Golds {
+				if g.Code == product {
+					gold = &g
+					break
+				}
+			}
+			if result, exist := results[parts[1]]; !exist {
+				results[parts[1]] = struct {
+					Time      string
+					BrandName string
+					Gold      *store.Gold
+				}{
+					Time:      parts[0],
+					BrandName: v.BrandName,
+					Gold:      gold,
+				}
+			} else {
+				if result.Time == "" || result.Time < parts[0] {
+					result.Time = parts[0]
+					result.BrandName = v.BrandName
+					result.Gold = gold
+				}
+			}
+		}
 	}
 
-	//history := c.store.GetHistory(brand)
+	if len(results) == 0 {
+		builder.WriteString("<b>Lịch sử giá vàng đang được cập nhật. Vui lòng thử lại trong giây lát!</b>")
+	} else {
+		builder.WriteString(fmt.Sprintf("<b>Lịch sử giá vàng %s tại %s:</b>\n", results[days[0]].Gold.Name, results[days[0]].BrandName))
+		builder.WriteString("\n")
+		for k, v := range results {
+			builder.WriteString(fmt.Sprintf("✦ <b>%s</b>", k))
+			if v.Gold.BuyPrice != "" {
+				builder.WriteString(fmt.Sprintf(" - <i>Mua:</i> <b>%s</b>", v.Gold.BuyPrice))
+			}
+			if v.Gold.SellPrice != "" {
+				builder.WriteString(fmt.Sprintf(" - <i>Bán:</i> <b>%s</b>", v.Gold.SellPrice))
+			}
+			builder.WriteString("\n")
+		}
 
-	//if board == nil || len(board.Golds) == 0 {
-	//	builder.WriteString("<b>Giá vàng đang được cập nhật. Vui lòng thử lại trong giây lát!</b>")
-	//} else {
-	//	builder.WriteString(fmt.Sprintf("<b>Bảng giá vàng tại %s:</b>\n", board.BrandName))
-	//	builder.WriteString("\n")
-	//	for _, gold := range board.Golds {
-	//		builder.WriteString(fmt.Sprintf("✦ <b>%s</b>", gold.Name))
-	//		if gold.BuyPrice != "" {
-	//			builder.WriteString(fmt.Sprintf(" - <i>Mua:</i> <b>%s</b>", gold.BuyPrice))
-	//		}
-	//		if gold.SellPrice != "" {
-	//			builder.WriteString(fmt.Sprintf(" - <i>Bán:</i> <b>%s</b>", gold.SellPrice))
-	//		}
-	//		builder.WriteString("\n")
-	//	}
-	//	builder.WriteString("\n")
-	//	builder.WriteString(fmt.Sprintf("<i>(Cập nhật lúc: %s</i> - <i>Đơn vị tính: đồng/chỉ)</i>", board.UpdatedAt))
-	//}
-
-	goldPriceHistory := map[string]interface{}{
-		"parse_mode": "HTML",
-		"text":       builder.String(),
-		"reply_markup": map[string]interface{}{
-			"inline_keyboard": []interface{}{
-				[]interface{}{
-					map[string]interface{}{
-						"text":          "<< Quay lại",
-						"callback_data": fmt.Sprintf("/back_historical_time_range_options_%s_%s", brand, product),
+		goldPriceHistory := map[string]interface{}{
+			"parse_mode": "HTML",
+			"text":       builder.String(),
+			"reply_markup": map[string]interface{}{
+				"inline_keyboard": []interface{}{
+					[]interface{}{
+						map[string]interface{}{
+							"text":          "<< Quay lại",
+							"callback_data": fmt.Sprintf("/back_historical_time_range_options_%s_%s", brand, product),
+						},
 					},
 				},
 			},
-		},
+		}
+
+		for k, v := range extras {
+			goldPriceHistory[k] = v
+		}
+
+		return goldPriceHistory
 	}
 
-	for k, v := range extras {
-		goldPriceHistory[k] = v
-	}
-
-	return goldPriceHistory
-}
-
-func (c *Client) loadComingSoon(extras map[string]interface{}) map[string]interface{} {
-	comingSoon := map[string]interface{}{
+	func(c *Client) loadComingSoon(extras
+	map[string]interface{}) map[string]interface{}{
+		comingSoon := map[string]interface{}{
 		"parse_mode": "HTML",
 		"text":       "<b>Tính năng sẽ sớm được ra mắt!</b>",
 	}
 
-	for k, v := range extras {
+		for k, v := range extras{
 		comingSoon[k] = v
 	}
 
-	return comingSoon
-}
+		return comingSoon
+	}
