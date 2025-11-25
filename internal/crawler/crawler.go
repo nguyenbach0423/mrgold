@@ -49,11 +49,11 @@ func WithStore(store *store.Store) func(*Crawler) {
 }
 
 func (c *Crawler) Crawl() {
-	c.crawlSJC()
-	c.crawlDOJI()
-	c.crawlPNJ()
-	c.crawlBTMC()
-	c.crawlBTMH()
+	go c.crawlSJC()
+	go c.crawlDOJI()
+	go c.crawlPNJ()
+	go c.crawlBTMC()
+	go c.crawlBTMH()
 }
 
 func (c *Crawler) crawlSJC() {
@@ -154,10 +154,10 @@ func (c *Crawler) crawlDOJI() {
 		var golds []store.Gold
 
 		idMatrix := map[string]string{
-			"AVPL/SJC": "01",
+			"AVPL/SJC":                          "01",
 			"Nhẫn tròn 9999 (Hưng Thịnh Vượng)": "02",
-			"Nữ trang 9999": "03",
-			"Nữ trang 999":  "04",
+			"Nữ trang 9999":                     "03",
+			"Nữ trang 999":                      "04",
 		}
 
 		doc.Find("table.goldprice-view tbody tr").Each(func(_ int, s *goquery.Selection) {

@@ -62,16 +62,18 @@ func (gs *GoogleSheet) fetchBoards() {
 
 		brand := value[0].(string)
 		brandName := value[1].(string)
-		goldName := value[2].(string)
-		buyPrice := value[3].(string)
-		sellPrice := value[4].(string)
-		updatedAt := value[5].(string)
+		goldCode := value[2].(string)
+		goldName := value[3].(string)
+		buyPrice := value[4].(string)
+		sellPrice := value[5].(string)
+		updatedAt := value[6].(string)
 
 		if board, exist := boards[brand]; !exist {
 			boards[brand] = &store.GoldPriceBoard{
 				BrandName: brandName,
 				Golds: []store.Gold{
 					{
+						Code:      goldCode,
 						Name:      goldName,
 						BuyPrice:  buyPrice,
 						SellPrice: sellPrice,
@@ -81,6 +83,7 @@ func (gs *GoogleSheet) fetchBoards() {
 			}
 		} else {
 			board.Golds = append(board.Golds, store.Gold{
+				Code:      goldCode,
 				Name:      goldName,
 				BuyPrice:  buyPrice,
 				SellPrice: sellPrice,
@@ -106,10 +109,11 @@ func (gs *GoogleSheet) fetchHistories() {
 
 		brand := value[0].(string)
 		brandName := value[1].(string)
-		goldName := value[2].(string)
-		buyPrice := value[3].(string)
-		sellPrice := value[4].(string)
-		updatedAt := value[5].(string)
+		goldCode := value[2].(string)
+		goldName := value[3].(string)
+		buyPrice := value[4].(string)
+		sellPrice := value[5].(string)
+		updatedAt := value[6].(string)
 
 		if history, exist := histories[brand]; !exist {
 			history = make(map[string]*store.GoldPriceBoard)
@@ -117,6 +121,7 @@ func (gs *GoogleSheet) fetchHistories() {
 				BrandName: brandName,
 				Golds: []store.Gold{
 					{
+						Code:      goldCode,
 						Name:      goldName,
 						BuyPrice:  buyPrice,
 						SellPrice: sellPrice,
@@ -133,6 +138,7 @@ func (gs *GoogleSheet) fetchHistories() {
 					BrandName: brandName,
 					Golds: []store.Gold{
 						{
+							Code:      goldCode,
 							Name:      goldName,
 							BuyPrice:  buyPrice,
 							SellPrice: sellPrice,
@@ -143,6 +149,7 @@ func (gs *GoogleSheet) fetchHistories() {
 				history[updatedAt] = board
 			} else {
 				board.Golds = append(board.Golds, store.Gold{
+					Code:      goldCode,
 					Name:      goldName,
 					BuyPrice:  buyPrice,
 					SellPrice: sellPrice,
