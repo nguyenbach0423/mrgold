@@ -2,7 +2,6 @@ package googlesheet
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	"github.com/mrgold/internal/store"
@@ -227,7 +226,7 @@ func (gs *GoogleSheet) fetchHistories() {
 		}
 	}
 
-	fmt.Println(histories)
+	log.Info().Interface("histories", histories).Send()
 
 	gs.store.SetHistories(histories)
 }
