@@ -414,19 +414,18 @@ func (c *Client) loadHistoricalProductOptions(brand string, extras map[string]in
 		})
 	}
 
+	keyboard = append(keyboard, []interface{}{
+		map[string]interface{}{
+			"text":          "<< Quay lại danh sách thương hiệu",
+			"callback_data": "/back_historical_branch_options",
+		},
+	})
+
 	productOptions := map[string]interface{}{
 		"parse_mode": "HTML",
 		"text":       "<b>Bạn muốn tra cứu lịch sử của sản phẩm nào?</b>",
 		"reply_markup": map[string]interface{}{
-			"inline_keyboard": []interface{}{
-				keyboard,
-				[]interface{}{
-					map[string]interface{}{
-						"text":          "<< Quay lại danh sách thương hiệu",
-						"callback_data": "/back_historical_branch_options",
-					},
-				},
-			},
+			"inline_keyboard": keyboard,
 		},
 	}
 
