@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"slices"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/mrgold/internal/httpclient"
 	"github.com/mrgold/internal/store"
@@ -250,7 +252,13 @@ func (c *Client) editMessageText(command string, extras map[string]interface{}) 
 		metaInfo := strings.ReplaceAll(command, "/next_historical_gold_price_", "")
 
 		parts := strings.Split(metaInfo, "_")
-		timeRange := parts[0]
+
+		var timeRange int
+		timeRange, err = strconv.Atoi(strings.TrimSuffix(parts[0], "d"))
+		if err != nil {
+			log.Error().Err(err).Send()
+			return
+		}
 		brand := parts[1]
 		product := parts[2]
 
@@ -521,8 +529,22 @@ func (c *Client) loadHistoricalTimeRangeOptions(brand string, product string, ex
 	return timeRangeOptions
 }
 
-func (c *Client) loadHistoricalGoldPrice(brand string, product string, timeRange string, extras map[string]interface{}) map[string]interface{} {
+func (c *Client) loadHistoricalGoldPrice(brand string, product string, timeRange int, extras map[string]interface{}) map[string]interface{} {
 	builder := strings.Builder{}
+
+	now := time.Now()
+
+	var days []string
+	for i := 0; i <= timeRange; i++ {
+		day := now.AddDate(0, 0, -i).Format("02/01/2006")
+		days = append(days, day)
+	}
+
+	for _, day := range days {
+		builder.WriteString(fmt.Sprintf("%s\n", day))
+	}
+
+	//history := c.store.GetHistory(brand)
 
 	//if board == nil || len(board.Golds) == 0 {
 	//	builder.WriteString("<b>Giá vàng đang được cập nhật. Vui lòng thử lại trong giây lát!</b>")
@@ -542,8 +564,6 @@ func (c *Client) loadHistoricalGoldPrice(brand string, product string, timeRange
 	//	builder.WriteString("\n")
 	//	builder.WriteString(fmt.Sprintf("<i>(Cập nhật lúc: %s</i> - <i>Đơn vị tính: đồng/chỉ)</i>", board.UpdatedAt))
 	//}
-
-	builder.WriteString("OK!")
 
 	goldPriceHistory := map[string]interface{}{
 		"parse_mode": "HTML",
