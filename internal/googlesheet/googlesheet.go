@@ -107,77 +107,9 @@ func (gs *GoogleSheet) fetchHistories() {
 			continue
 		}
 
-		idMatrixSJC := map[string]string{
-			"Vàng SJC 1L, 10L, 1KG":                    "01",
-			"Vàng SJC 5 chỉ":                           "02",
-			"Vàng SJC 0.5 chỉ, 1 chỉ, 2 chỉ":           "03",
-			"Vàng nhẫn SJC 99,99% 1 chỉ, 2 chỉ, 5 chỉ": "04",
-			"Vàng nhẫn SJC 99,99% 0.5 chỉ, 0.3 chỉ":    "05",
-			"Nữ trang 99,99%":                          "06",
-			"Nữ trang 99%":                             "07",
-			"Nữ trang 75%":                             "08",
-			"Nữ trang 58,3%":                           "09",
-			"Nữ trang 41,7%":                           "10",
-		}
-
-		idMatrixDOJI := map[string]string{
-			"AVPL/SJC":                          "01",
-			"Nhẫn tròn 9999 (Hưng Thịnh Vượng)": "02",
-			"Nữ trang 9999":                     "03",
-			"Nữ trang 999":                      "04",
-		}
-
-		idMatrixPNJ := map[string]string{
-			"Vàng miếng SJC 999.9":    "01",
-			"Nhẫn Trơn PNJ 999.9":     "02",
-			"Vàng Kim Bảo 999.9":      "03",
-			"Vàng Phúc Lộc Tài 999.9": "04",
-			"Vàng PNJ - Phượng Hoàng": "05",
-			"Vàng nữ trang 999.9":     "06",
-			"Vàng nữ trang 999":       "07",
-			"Vàng nữ trang 99":        "08",
-			"Vàng 750 (18K)":          "09",
-			"Vàng 585 (14K)":          "10",
-			"Vàng 416 (10K)":          "11",
-		}
-
-		idMatrixBTMC := map[string]string{
-			"Vàng miếng VRTL Bảo Tín Minh Châu":      "01",
-			"Nhẫn tròn trơn Bảo Tín Minh Châu":       "02",
-			"Quà mừng bản vị vàng Bảo Tín Minh Châu": "03",
-			"Vàng miếng SJC":                         "04",
-			"Trang sức Vàng Rồng Thăng Long 999.9":   "05",
-			"Trang sức Vàng Rồng Thăng Long 99.9":    "06",
-		}
-
-		idMatrixBTMH := map[string]string{
-			"Nhẫn ép vỉ Kim Gia Bảo":          "01",
-			"Vàng miếng SJC (Cty CP BTMH)":    "02",
-			"Nhẫn ép vỉ Vàng Rồng Thăng Long": "03",
-			"Đồng vàng Kim Gia Bảo hoa sen":   "04",
-			"Vàng nữ trang 999.9":             "05",
-			"Vàng nữ trang 99.9":              "06",
-			"Tiểu Kim Cát - 0,3 chỉ":          "07",
-		}
-
-		code := ""
 		brand := value[0].(string)
-		name := value[3].(string)
-		if brand == "sjc" {
-			code = idMatrixSJC[name]
-		} else if brand == "doji" {
-			code = idMatrixDOJI[name]
-		} else if brand == "pnj" {
-			code = idMatrixPNJ[name]
-		} else if brand == "btmc" {
-			code = idMatrixBTMC[name]
-		} else if brand == "btmh" {
-			code = idMatrixBTMH[name]
-		}
-
-		//brand := value[0].(string)
 		brandName := value[1].(string)
-		goldCode := code
+		goldCode := value[2].(string)
 		goldName := value[3].(string)
 		buyPrice := value[4].(string)
 		sellPrice := value[5].(string)
@@ -225,8 +157,6 @@ func (gs *GoogleSheet) fetchHistories() {
 			}
 		}
 	}
-
-	log.Info().Interface("histories", histories).Send()
 
 	gs.store.SetHistories(histories)
 }
