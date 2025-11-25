@@ -2,7 +2,6 @@ package googlesheet
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	"github.com/mrgold/internal/store"
@@ -104,6 +103,8 @@ func (gs *GoogleSheet) fetchHistories() {
 
 	var histories = make(map[string]map[string]*store.GoldPriceBoard)
 	for _, value := range vr.Values {
+		log.Info().Interface("value", value).Send()
+
 		if len(value) < 7 {
 			continue
 		}
@@ -223,13 +224,9 @@ func (gs *GoogleSheet) fetchHistories() {
 					BuyPrice:  buyPrice,
 					SellPrice: sellPrice,
 				})
-				history[updatedAt] = board
 			}
-			histories[brand] = history
 		}
 	}
-
-	fmt.Println(histories)
 
 	gs.store.SetHistories(histories)
 }
