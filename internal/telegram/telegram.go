@@ -409,7 +409,7 @@ func (c *Client) loadHistoricalProductOptions(brand string, extras map[string]in
 		keyboard = append(keyboard, []interface{}{
 			map[string]interface{}{
 				"text":          gold.Name,
-				"callback_data": fmt.Sprintf("/next_historical_time_range_%s", gold.Name),
+				"callback_data": fmt.Sprintf("/next_historical_time_range_%s", "name"),
 			},
 		})
 	}
