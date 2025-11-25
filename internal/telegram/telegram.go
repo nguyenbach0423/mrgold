@@ -592,39 +592,39 @@ func (c *Client) loadHistoricalGoldPrice(brand string, product string, timeRange
 			}
 			builder.WriteString("\n")
 		}
+	}
 
-		goldPriceHistory := map[string]interface{}{
-			"parse_mode": "HTML",
-			"text":       builder.String(),
-			"reply_markup": map[string]interface{}{
-				"inline_keyboard": []interface{}{
-					[]interface{}{
-						map[string]interface{}{
-							"text":          "<< Quay lại",
-							"callback_data": fmt.Sprintf("/back_historical_time_range_options_%s_%s", brand, product),
-						},
+	goldPriceHistory := map[string]interface{}{
+		"parse_mode": "HTML",
+		"text":       builder.String(),
+		"reply_markup": map[string]interface{}{
+			"inline_keyboard": []interface{}{
+				[]interface{}{
+					map[string]interface{}{
+						"text":          "<< Quay lại",
+						"callback_data": fmt.Sprintf("/back_historical_time_range_options_%s_%s", brand, product),
 					},
 				},
 			},
-		}
-
-		for k, v := range extras {
-			goldPriceHistory[k] = v
-		}
-
-		return goldPriceHistory
+		},
 	}
 
-	func(c *Client) loadComingSoon(extras
-	map[string]interface{}) map[string]interface{}{
-		comingSoon := map[string]interface{}{
+	for k, v := range extras {
+		goldPriceHistory[k] = v
+	}
+
+	return goldPriceHistory
+}
+
+func (c *Client) loadComingSoon(extras map[string]interface{}) map[string]interface{} {
+	comingSoon := map[string]interface{}{
 		"parse_mode": "HTML",
 		"text":       "<b>Tính năng sẽ sớm được ra mắt!</b>",
 	}
 
-		for k, v := range extras{
+	for k, v := range extras {
 		comingSoon[k] = v
 	}
 
-		return comingSoon
-	}
+	return comingSoon
+}
