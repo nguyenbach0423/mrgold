@@ -223,7 +223,9 @@ func (gs *GoogleSheet) fetchHistories() {
 					BuyPrice:  buyPrice,
 					SellPrice: sellPrice,
 				})
+				history[updatedAt] = board
 			}
+			histories[brand] = history
 		}
 	}
 
