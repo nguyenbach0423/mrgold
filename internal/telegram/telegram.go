@@ -588,7 +588,19 @@ func (c *Client) loadHistoricalGoldPrice(brand string, product string, timeRange
 			keys = append(keys, key)
 		}
 
-		slices.Sort(keys)
+		slices.SortFunc(keys, func(i, j string) int {
+			layout := "02/01/2006"
+			ti, _ := time.Parse(layout, i)
+			tj, _ := time.Parse(layout, j)
+			switch {
+			case ti.After(tj):
+				return -1
+			case ti.Before(tj):
+				return 1
+			default:
+				return 0
+			}
+		})
 
 		for _, key := range keys {
 			value := results[key]
