@@ -126,12 +126,18 @@ func (c *Client) sendMessage(command string, extras map[string]interface{}) {
 
 	var reqBody []byte
 	if command == "/gold_live" {
-		reqBody, err = json.Marshal(loadGoldBranchOptions(extras))
+		reqBody, err = json.Marshal(loadLiveGoldBranchOptions(extras))
 		if err != nil {
 			log.Error().Err(err).Send()
 			return
 		}
-	} else if command == "/gold_alert" || command == "/gold_history" || command == "/feedback" || command == "/donate" {
+	} else if command == "/gold_history" {
+		reqBody, err = json.Marshal(loadHistoricalGoldBranchOptions(extras))
+		if err != nil {
+			log.Error().Err(err).Send()
+			return
+		}
+	} else if command == "/gold_alert" || command == "/feedback" || command == "/donate" {
 		reqBody, err = json.Marshal(loadComingSoon(extras))
 		if err != nil {
 			log.Error().Err(err).Send()
@@ -188,8 +194,8 @@ func (c *Client) editMessageText(command string, extras map[string]interface{}) 
 
 	var reqBody []byte
 	switch command {
-	case "/next_price_board_sjc", "/next_price_board_doji", "/next_price_board_pnj", "/next_price_board_btmc", "/next_price_board_btmh":
-		brand := strings.ReplaceAll(command, "/next_price_board_", "")
+	case "/next_live_price_board_sjc", "/next_live_price_board_doji", "/next_live_price_board_pnj", "/next_live_price_board_btmc", "/next_live_price_board_btmh":
+		brand := strings.ReplaceAll(command, "/next_live_price_board_", "")
 		board := c.store.GetBoard(brand)
 
 		reqBody, err = json.Marshal(loadGoldPriceBoard(board, extras))
@@ -198,7 +204,7 @@ func (c *Client) editMessageText(command string, extras map[string]interface{}) 
 			return
 		}
 	case "/back_branch_options":
-		reqBody, err = json.Marshal(loadGoldBranchOptions(extras))
+		reqBody, err = json.Marshal(loadLiveGoldBranchOptions(extras))
 		if err != nil {
 			log.Error().Err(err).Send()
 			return
@@ -255,7 +261,7 @@ func loadIntro(extras map[string]interface{}) map[string]interface{} {
 	return intro
 }
 
-func loadGoldBranchOptions(extras map[string]interface{}) map[string]interface{} {
+func loadLiveGoldBranchOptions(extras map[string]interface{}) map[string]interface{} {
 	goldBranchOptions := map[string]interface{}{
 		"parse_mode": "HTML",
 		"text":       "<b>Vui lòng chọn thương hiệu trong danh sách sau:</b>",
@@ -264,25 +270,25 @@ func loadGoldBranchOptions(extras map[string]interface{}) map[string]interface{}
 				[]interface{}{
 					map[string]interface{}{
 						"text":          "SJC",
-						"callback_data": "/next_price_board_sjc",
+						"callback_data": "/next_live_price_board_sjc",
 					},
 					map[string]interface{}{
 						"text":          "DOJI",
-						"callback_data": "/next_price_board_doji",
+						"callback_data": "/next_live_price_board_doji",
 					},
 					map[string]interface{}{
 						"text":          "PNJ",
-						"callback_data": "/next_price_board_pnj",
+						"callback_data": "/next_live_price_board_pnj",
 					},
 				},
 				[]interface{}{
 					map[string]interface{}{
 						"text":          "Bảo Tín Minh Châu",
-						"callback_data": "/next_price_board_btmc",
+						"callback_data": "/next_live_price_board_btmc",
 					},
 					map[string]interface{}{
 						"text":          "Bảo Tín Mạnh Hải",
-						"callback_data": "/next_price_board_btmh",
+						"callback_data": "/next_live_price_board_btmh",
 					},
 				},
 			},
@@ -338,6 +344,47 @@ func loadGoldPriceBoard(board *store.GoldPriceBoard, extras map[string]interface
 	}
 
 	return goldPriceBoard
+}
+
+func loadHistoricalGoldBranchOptions(extras map[string]interface{}) map[string]interface{} {
+	goldBranchOptions := map[string]interface{}{
+		"parse_mode": "HTML",
+		"text":       "<b>Vui lòng chọn thương hiệu để xem lịch sử:</b>",
+		"reply_markup": map[string]interface{}{
+			"inline_keyboard": []interface{}{
+				[]interface{}{
+					map[string]interface{}{
+						"text":          "SJC",
+						"callback_data": "/next_historical_price_board_sjc",
+					},
+					map[string]interface{}{
+						"text":          "DOJI",
+						"callback_data": "/next_historical_price_board_doji",
+					},
+					map[string]interface{}{
+						"text":          "PNJ",
+						"callback_data": "/next_historical_price_board_pnj",
+					},
+				},
+				[]interface{}{
+					map[string]interface{}{
+						"text":          "Bảo Tín Minh Châu",
+						"callback_data": "/next_historical_price_board_btmc",
+					},
+					map[string]interface{}{
+						"text":          "Bảo Tín Mạnh Hải",
+						"callback_data": "/next_historical_price_board_btmh",
+					},
+				},
+			},
+		},
+	}
+
+	for k, v := range extras {
+		goldBranchOptions[k] = v
+	}
+
+	return goldBranchOptions
 }
 
 func loadComingSoon(extras map[string]interface{}) map[string]interface{} {
