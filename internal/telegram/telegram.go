@@ -209,6 +209,20 @@ func (c *Client) editMessageText(command string, extras map[string]interface{}) 
 			log.Error().Err(err).Send()
 			return
 		}
+	case "/next_historical_product_options_sjc", "/next_historical_product_options_doji", "/next_historical_product_options_pnj", "/next_historical_product_options_btmc", "/next_historical_product_options_btmh":
+		brand := strings.ReplaceAll(command, "/next_historical_product_options_", "")
+
+		reqBody, err = json.Marshal(c.loadHistoricalProductOptions(brand, extras))
+		if err != nil {
+			log.Error().Err(err).Send()
+			return
+		}
+	case "/back_historical_branch_options":
+		reqBody, err = json.Marshal(c.loadHistoricalGoldBranchOptions(extras))
+		if err != nil {
+			log.Error().Err(err).Send()
+			return
+		}
 	default:
 		return
 	}
@@ -355,25 +369,25 @@ func (c *Client) loadHistoricalGoldBranchOptions(extras map[string]interface{}) 
 				[]interface{}{
 					map[string]interface{}{
 						"text":          "SJC",
-						"callback_data": "/next_historical_price_board_sjc",
+						"callback_data": "/next_historical_product_options_sjc",
 					},
 					map[string]interface{}{
 						"text":          "DOJI",
-						"callback_data": "/next_historical_price_board_doji",
+						"callback_data": "/next_historical_product_options_doji",
 					},
 					map[string]interface{}{
 						"text":          "PNJ",
-						"callback_data": "/next_historical_price_board_pnj",
+						"callback_data": "/next_historical_product_options_pnj",
 					},
 				},
 				[]interface{}{
 					map[string]interface{}{
 						"text":          "Bảo Tín Minh Châu",
-						"callback_data": "/next_historical_price_board_btmc",
+						"callback_data": "/next_historical_product_options_btmc",
 					},
 					map[string]interface{}{
 						"text":          "Bảo Tín Mạnh Hải",
-						"callback_data": "/next_historical_price_board_btmh",
+						"callback_data": "/next_historical_product_options_btmh",
 					},
 				},
 			},
