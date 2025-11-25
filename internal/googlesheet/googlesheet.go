@@ -160,13 +160,14 @@ func (gs *GoogleSheet) Sync() {
 }
 
 func (gs *GoogleSheet) syncBoards() {
-	values := [][]interface{}{{"Brand", "BrandName", "GoldName", "BuyPrice", "SellPrice", "UpdatedAt"}}
+	values := [][]interface{}{{"Brand", "BrandName", "GoldCode", "GoldName", "BuyPrice", "SellPrice", "UpdatedAt"}}
 
 	for brand, board := range gs.store.GetBoards() {
 		for _, gold := range board.Golds {
 			values = append(values, []interface{}{
 				brand,
 				board.BrandName,
+				gold.Code,
 				gold.Name,
 				gold.BuyPrice,
 				gold.SellPrice,
@@ -186,7 +187,7 @@ func (gs *GoogleSheet) syncBoards() {
 }
 
 func (gs *GoogleSheet) syncHistories() {
-	values := [][]interface{}{{"Brand", "BrandName", "GoldName", "BuyPrice", "SellPrice", "UpdatedAt"}}
+	values := [][]interface{}{{"Brand", "BrandName", "GoldCode", "GoldName", "BuyPrice", "SellPrice", "UpdatedAt"}}
 
 	for brand, history := range gs.store.GetHistories() {
 		for _, board := range history {
@@ -194,6 +195,7 @@ func (gs *GoogleSheet) syncHistories() {
 				values = append(values, []interface{}{
 					brand,
 					board.BrandName,
+					gold.Code,
 					gold.Name,
 					gold.BuyPrice,
 					gold.SellPrice,
