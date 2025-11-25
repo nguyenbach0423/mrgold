@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/mrgold/internal/httpclient"
@@ -193,8 +194,7 @@ func (c *Client) editMessageText(command string, extras map[string]interface{}) 
 	var err error
 
 	var reqBody []byte
-	switch command {
-	case "/next_live_price_board_sjc", "/next_live_price_board_doji", "/next_live_price_board_pnj", "/next_live_price_board_btmc", "/next_live_price_board_btmh":
+	if slices.Contains([]string{"/next_live_price_board_sjc", "/next_live_price_board_doji", "/next_live_price_board_pnj", "/next_live_price_board_btmc", "/next_live_price_board_btmh"}, command) {
 		brand := strings.ReplaceAll(command, "/next_live_price_board_", "")
 		board := c.store.GetBoard(brand)
 
@@ -203,13 +203,13 @@ func (c *Client) editMessageText(command string, extras map[string]interface{}) 
 			log.Error().Err(err).Send()
 			return
 		}
-	case "/back_live_branch_options":
+	} else if command == "/back_live_branch_options" {
 		reqBody, err = json.Marshal(c.loadLiveGoldBranchOptions(extras))
 		if err != nil {
 			log.Error().Err(err).Send()
 			return
 		}
-	case "/next_historical_product_options_sjc", "/next_historical_product_options_doji", "/next_historical_product_options_pnj", "/next_historical_product_options_btmc", "/next_historical_product_options_btmh":
+	} else if slices.Contains([]string{"/next_historical_product_options_sjc", "/next_historical_product_options_doji", "/next_historical_product_options_pnj", "/next_historical_product_options_btmc", "/next_historical_product_options_btmh"}, command) {
 		brand := strings.ReplaceAll(command, "/next_historical_product_options_", "")
 
 		reqBody, err = json.Marshal(c.loadHistoricalProductOptions(brand, extras))
@@ -217,13 +217,31 @@ func (c *Client) editMessageText(command string, extras map[string]interface{}) 
 			log.Error().Err(err).Send()
 			return
 		}
-	case "/back_historical_branch_options":
+	} else if command == "/back_historical_branch_options" {
 		reqBody, err = json.Marshal(c.loadHistoricalGoldBranchOptions(extras))
 		if err != nil {
 			log.Error().Err(err).Send()
 			return
 		}
-	default:
+	} else if strings.HasPrefix(command, "/next_historical_time_range_") {
+		product := strings.ReplaceAll(command, "/next_historical_time_range_", "")
+
+		reqBody, err = json.Marshal(c.loadHistoricalTimeRangeOptions(product, extras))
+		if err != nil {
+			log.Error().Err(err).Send()
+			return
+		}
+	} else if strings.HasPrefix(command, "/back_historical_product_options_") {
+		product := strings.ReplaceAll(command, "/back_historical_product_options_", "")
+
+		brand := strings.Split(product, "_")[0]
+
+		reqBody, err = json.Marshal(c.loadHistoricalProductOptions(brand, extras))
+		if err != nil {
+			log.Error().Err(err).Send()
+			return
+		}
+	} else {
 		return
 	}
 
@@ -409,7 +427,7 @@ func (c *Client) loadHistoricalProductOptions(brand string, extras map[string]in
 		keyboard = append(keyboard, []interface{}{
 			map[string]interface{}{
 				"text":          gold.Name,
-				"callback_data": fmt.Sprintf("/next_historical_time_range_%s", "name"),
+				"callback_data": fmt.Sprintf("/next_historical_time_range_%s_%s", brand, "001"),
 			},
 		})
 	}
@@ -426,6 +444,43 @@ func (c *Client) loadHistoricalProductOptions(brand string, extras map[string]in
 		"text":       "<b>Bạn muốn tra cứu lịch sử của sản phẩm nào?</b>",
 		"reply_markup": map[string]interface{}{
 			"inline_keyboard": keyboard,
+		},
+	}
+
+	for k, v := range extras {
+		productOptions[k] = v
+	}
+
+	return productOptions
+}
+
+func (c *Client) loadHistoricalTimeRangeOptions(product string, extras map[string]interface{}) map[string]interface{} {
+	productOptions := map[string]interface{}{
+		"parse_mode": "HTML",
+		"text":       "<b>Vui lòng chọn khoảng thời gian bạn muốn tra cứu:</b>",
+		"reply_markup": map[string]interface{}{
+			"inline_keyboard": []interface{}{
+				[]interface{}{
+					map[string]interface{}{
+						"text":          "1 ngày",
+						"callback_data": fmt.Sprintf("/next_historical_1_day_%s", product),
+					},
+					map[string]interface{}{
+						"text":          "3 ngày",
+						"callback_data": fmt.Sprintf("/next_historical_3_days_%s", product),
+					},
+					map[string]interface{}{
+						"text":          "5 ngày",
+						"callback_data": fmt.Sprintf("/next_historical_5_days_%s", product),
+					},
+				},
+				[]interface{}{
+					map[string]interface{}{
+						"text":          "<< Quay lại danh sách sản phẩm",
+						"callback_data": fmt.Sprintf("/back_historical_product_options_%s", product),
+					},
+				},
+			},
 		},
 	}
 
