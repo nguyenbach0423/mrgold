@@ -84,11 +84,25 @@ func (c *Crawler) crawlSJC() {
 
 		var golds []store.Gold
 
+		idMatrix := map[int]string{
+			1:   "01",
+			17:  "02",
+			33:  "03",
+			49:  "04",
+			65:  "05",
+			81:  "06",
+			97:  "07",
+			113: "08",
+			145: "09",
+			161: "10",
+		}
+
 		for _, gold := range goldPriceBoard.Data {
 			if gold.Branch != "Hồ Chí Minh" || gold.Id == 129 || gold.Id == 210 {
 				continue
 			}
 			golds = append(golds, store.Gold{
+				Code:      idMatrix[gold.Id],
 				Name:      gold.Name,
 				BuyPrice:  convertStringPrice(gold.BuyPrice),
 				SellPrice: convertStringPrice(gold.SellPrice),
@@ -139,6 +153,13 @@ func (c *Crawler) crawlDOJI() {
 
 		var golds []store.Gold
 
+		idMatrix := map[string]string{
+			"AVPL/SJC":                          "01",
+			"Nhẫn tròn 9999 (Hưng Thịnh Vượng)": "02",
+			"Nữ trang 9999":                     "03",
+			"Nữ trang 999":                      "04",
+		}
+
 		doc.Find("table.goldprice-view tbody tr").Each(func(_ int, s *goquery.Selection) {
 			gold := store.Gold{}
 
@@ -147,6 +168,8 @@ func (c *Crawler) crawlDOJI() {
 			if gold.Name == "" {
 				return
 			}
+
+			gold.Code = idMatrix[gold.Name]
 
 			gold.BuyPrice = convertStringPrice(strings.TrimSpace(s.Find("td.goldprice-td-0 div.item-relative").Text()))
 			gold.SellPrice = convertStringPrice(strings.TrimSpace(s.Find("td.goldprice-td-1 div.item-relative").Text()))
@@ -195,6 +218,20 @@ func (c *Crawler) crawlPNJ() {
 
 		var golds []store.Gold
 
+		idMatrix := map[string]string{
+			"SJC":  "01",
+			"N24K": "02",
+			"KB":   "03",
+			"TL":   "04",
+			"PNJ":  "05",
+			"24K":  "06",
+			"999":  "07",
+			"99":   "08",
+			"75":   "09",
+			"58.5": "10",
+			"41":   "11",
+		}
+
 		codes := []string{"SJC", "N24K", "KB", "TL", "PNJ", "24K", "999", "99", "75", "58.5", "41"}
 		for _, gold := range goldPriceBoard.Data {
 			if !slices.Contains(codes, gold.Code) {
@@ -202,6 +239,7 @@ func (c *Crawler) crawlPNJ() {
 			}
 
 			golds = append(golds, store.Gold{
+				Code:      idMatrix[gold.Code],
 				Name:      gold.Name,
 				BuyPrice:  convertNumericPrice(gold.BuyPrice),
 				SellPrice: convertNumericPrice(gold.SellPrice),
@@ -235,6 +273,15 @@ func (c *Crawler) crawlBTMC() {
 		}
 
 		var golds []store.Gold
+
+		idMatrix := map[string]string{
+			"Vàng miếng VRTL Bảo Tín Minh Châu":      "01",
+			"Nhẫn tròn trơn Bảo Tín Minh Châu":       "02",
+			"Quà mừng bản vị vàng Bảo Tín Minh Châu": "03",
+			"Vàng miếng SJC":                         "04",
+			"Trang sức Vàng Rồng Thăng Long 999.9":   "05",
+			"Trang sức Vàng Rồng Thăng Long 99.9":    "06",
+		}
 
 		doc.Find("table.bd_price_home tr").Each(func(_ int, s *goquery.Selection) {
 			var cells []string
@@ -275,8 +322,11 @@ func (c *Crawler) crawlBTMC() {
 				return
 			}
 
+			name = convertGoldNameBTMC(name)
+
 			gold := store.Gold{
-				Name:      convertGoldNameBTMC(name),
+				Code:      idMatrix[name],
+				Name:      name,
 				BuyPrice:  convertStringPrice(buyPrice),
 				SellPrice: convertStringPrice(sellPrice),
 			}
@@ -315,6 +365,16 @@ func (c *Crawler) crawlBTMH() {
 
 		var golds []store.Gold
 
+		idMatrix := map[string]string{
+			"Nhẫn ép vỉ Kim Gia Bảo":          "01",
+			"Vàng miếng SJC (Cty CP BTMH)":    "02",
+			"Nhẫn ép vỉ Vàng Rồng Thăng Long": "03",
+			"Đồng vàng Kim Gia Bảo hoa sen":   "04",
+			"Vàng nữ trang 999.9":             "05",
+			"Vàng nữ trang 99.9":              "06",
+			"Tiểu Kim Cát - 0,3 chỉ":          "07",
+		}
+
 		doc.Find("table.gold-table-content tbody tr").Each(func(_ int, s *goquery.Selection) {
 			var cells []string
 
@@ -327,6 +387,7 @@ func (c *Crawler) crawlBTMH() {
 			}
 
 			gold := store.Gold{
+				Code:      idMatrix[cells[0]],
 				Name:      cells[0],
 				BuyPrice:  cells[1],
 				SellPrice: cells[2],

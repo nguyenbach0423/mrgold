@@ -236,8 +236,6 @@ func (c *Client) editMessageText(command string, extras map[string]interface{}) 
 
 		brand := strings.Split(product, "_")[0]
 
-		log.Info().Msg("-----------" + brand)
-
 		reqBody, err = json.Marshal(c.loadHistoricalProductOptions(brand, extras))
 		if err != nil {
 			log.Error().Err(err).Send()

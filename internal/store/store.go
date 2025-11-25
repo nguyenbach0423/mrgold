@@ -18,6 +18,7 @@ func NewStore() *Store {
 }
 
 type Gold struct {
+	Code      string
 	Name      string
 	BuyPrice  string
 	SellPrice string
