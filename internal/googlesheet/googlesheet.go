@@ -43,8 +43,8 @@ func WithStore(store *store.Store) func(*GoogleSheet) {
 }
 
 func (gs *GoogleSheet) Fetch() {
-	gs.fetchBoards()
-	gs.fetchHistories()
+	go gs.fetchBoards()
+	go gs.fetchHistories()
 }
 
 func (gs *GoogleSheet) fetchBoards() {
@@ -162,8 +162,8 @@ func (gs *GoogleSheet) fetchHistories() {
 }
 
 func (gs *GoogleSheet) Sync() {
-	gs.syncBoards()
-	gs.syncHistories()
+	go gs.syncBoards()
+	go gs.syncHistories()
 }
 
 func (gs *GoogleSheet) syncBoards() {
