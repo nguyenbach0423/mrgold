@@ -103,7 +103,7 @@ func (gs *GoogleSheet) fetchHistories() {
 
 	var histories = make(map[string]map[string]*store.GoldPriceBoard)
 	for _, value := range vr.Values {
-		if len(value) < 6 {
+		if len(value) < 7 {
 			continue
 		}
 
