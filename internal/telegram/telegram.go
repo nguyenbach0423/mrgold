@@ -580,15 +580,25 @@ func (c *Client) loadHistoricalGoldPrice(brand string, product string, timeRange
 	if len(results) == 0 {
 		builder.WriteString("<b>Lịch sử giá vàng đang được cập nhật. Vui lòng thử lại trong giây lát!</b>")
 	} else {
-		builder.WriteString(fmt.Sprintf("<b>Lịch sử giá vàng %s tại %s:</b>\n", results[days[0]].Gold.Name, results[days[0]].BrandName))
+		builder.WriteString(fmt.Sprintf("<b>Lịch sử giá %s tại %s:</b>\n", results[days[0]].Gold.Name, results[days[0]].BrandName))
 		builder.WriteString("\n")
-		for k, v := range results {
-			builder.WriteString(fmt.Sprintf("✦ <b>%s</b>", k))
-			if v.Gold.BuyPrice != "" {
-				builder.WriteString(fmt.Sprintf(" - <i>Mua:</i> <b>%s</b>", v.Gold.BuyPrice))
+
+		keys := make([]string, 0, len(results))
+		for key := range results {
+			keys = append(keys, key)
+		}
+
+		slices.Sort(keys)
+
+		for _, key := range keys {
+			value := results[key]
+
+			builder.WriteString(fmt.Sprintf("✦ <b>%s</b>", key))
+			if value.Gold.BuyPrice != "" {
+				builder.WriteString(fmt.Sprintf(" - <i>Mua:</i> <b>%s</b>", value.Gold.BuyPrice))
 			}
-			if v.Gold.SellPrice != "" {
-				builder.WriteString(fmt.Sprintf(" - <i>Bán:</i> <b>%s</b>", v.Gold.SellPrice))
+			if value.Gold.SellPrice != "" {
+				builder.WriteString(fmt.Sprintf(" - <i>Bán:</i> <b>%s</b>", value.Gold.SellPrice))
 			}
 			builder.WriteString("\n")
 		}
