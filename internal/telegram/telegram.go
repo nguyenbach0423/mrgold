@@ -224,19 +224,49 @@ func (c *Client) editMessageText(command string, extras map[string]interface{}) 
 			return
 		}
 	} else if strings.HasPrefix(command, "/next_historical_time_range_") {
-		product := strings.ReplaceAll(command, "/next_historical_time_range_", "")
+		metaInfo := strings.ReplaceAll(command, "/next_historical_time_range_", "")
 
-		reqBody, err = json.Marshal(c.loadHistoricalTimeRangeOptions(product, extras))
+		parts := strings.Split(metaInfo, "_")
+
+		brand := parts[0]
+		product := parts[1]
+
+		reqBody, err = json.Marshal(c.loadHistoricalTimeRangeOptions(brand, product, extras))
 		if err != nil {
 			log.Error().Err(err).Send()
 			return
 		}
 	} else if strings.HasPrefix(command, "/back_historical_product_options_") {
-		product := strings.ReplaceAll(command, "/back_historical_product_options_", "")
+		metaInfo := strings.ReplaceAll(command, "/back_historical_product_options_", "")
 
-		brand := strings.Split(product, "_")[0]
+		brand := strings.Split(metaInfo, "_")[0]
 
 		reqBody, err = json.Marshal(c.loadHistoricalProductOptions(brand, extras))
+		if err != nil {
+			log.Error().Err(err).Send()
+			return
+		}
+	} else if strings.HasPrefix(command, "/next_historical_gold_price_") {
+		metaInfo := strings.ReplaceAll(command, "/next_historical_gold_price_", "")
+
+		parts := strings.Split(metaInfo, "_")
+		timeRange := parts[0]
+		brand := parts[1]
+		product := parts[2]
+
+		reqBody, err = json.Marshal(c.loadHistoricalGoldPrice(brand, product, timeRange, extras))
+		if err != nil {
+			log.Error().Err(err).Send()
+			return
+		}
+	} else if strings.HasPrefix(command, "/back_historical_time_range_options_") {
+		metaInfo := strings.ReplaceAll(command, "/back_historical_time_range_options_", "")
+
+		parts := strings.Split(metaInfo, "_")
+		brand := parts[0]
+		product := parts[1]
+
+		reqBody, err = json.Marshal(c.loadHistoricalTimeRangeOptions(brand, product, extras))
 		if err != nil {
 			log.Error().Err(err).Send()
 			return
@@ -427,7 +457,7 @@ func (c *Client) loadHistoricalProductOptions(brand string, extras map[string]in
 		keyboard = append(keyboard, []interface{}{
 			map[string]interface{}{
 				"text":          gold.Name,
-				"callback_data": fmt.Sprintf("/next_historical_time_range_%s_%s", brand, "001"),
+				"callback_data": fmt.Sprintf("/next_historical_time_range_%s_%s", brand, gold.Code),
 			},
 		})
 	}
@@ -454,8 +484,8 @@ func (c *Client) loadHistoricalProductOptions(brand string, extras map[string]in
 	return productOptions
 }
 
-func (c *Client) loadHistoricalTimeRangeOptions(product string, extras map[string]interface{}) map[string]interface{} {
-	productOptions := map[string]interface{}{
+func (c *Client) loadHistoricalTimeRangeOptions(brand string, product string, extras map[string]interface{}) map[string]interface{} {
+	timeRangeOptions := map[string]interface{}{
 		"parse_mode": "HTML",
 		"text":       "<b>Vui lòng chọn khoảng thời gian bạn muốn tra cứu:</b>",
 		"reply_markup": map[string]interface{}{
@@ -463,21 +493,21 @@ func (c *Client) loadHistoricalTimeRangeOptions(product string, extras map[strin
 				[]interface{}{
 					map[string]interface{}{
 						"text":          "1 ngày",
-						"callback_data": fmt.Sprintf("/next_historical_1_day_%s", product),
+						"callback_data": fmt.Sprintf("/next_historical_gold_price_1d_%s_%s", brand, product),
 					},
 					map[string]interface{}{
 						"text":          "3 ngày",
-						"callback_data": fmt.Sprintf("/next_historical_3_days_%s", product),
+						"callback_data": fmt.Sprintf("/next_historical_gold_price_3d_%s_%s", brand, product),
 					},
 					map[string]interface{}{
 						"text":          "5 ngày",
-						"callback_data": fmt.Sprintf("/next_historical_5_days_%s", product),
+						"callback_data": fmt.Sprintf("/next_historical_gold_price_5d_%s_%s", brand, product),
 					},
 				},
 				[]interface{}{
 					map[string]interface{}{
 						"text":          "<< Quay lại danh sách sản phẩm",
-						"callback_data": fmt.Sprintf("/back_historical_product_options_%s", product),
+						"callback_data": fmt.Sprintf("/back_historical_product_options_%s_%s", brand, product),
 					},
 				},
 			},
@@ -485,10 +515,56 @@ func (c *Client) loadHistoricalTimeRangeOptions(product string, extras map[strin
 	}
 
 	for k, v := range extras {
-		productOptions[k] = v
+		timeRangeOptions[k] = v
 	}
 
-	return productOptions
+	return timeRangeOptions
+}
+
+func (c *Client) loadHistoricalGoldPrice(brand string, product string, timeRange string, extras map[string]interface{}) map[string]interface{} {
+	builder := strings.Builder{}
+
+	//if board == nil || len(board.Golds) == 0 {
+	//	builder.WriteString("<b>Giá vàng đang được cập nhật. Vui lòng thử lại trong giây lát!</b>")
+	//} else {
+	//	builder.WriteString(fmt.Sprintf("<b>Bảng giá vàng tại %s:</b>\n", board.BrandName))
+	//	builder.WriteString("\n")
+	//	for _, gold := range board.Golds {
+	//		builder.WriteString(fmt.Sprintf("✦ <b>%s</b>", gold.Name))
+	//		if gold.BuyPrice != "" {
+	//			builder.WriteString(fmt.Sprintf(" - <i>Mua:</i> <b>%s</b>", gold.BuyPrice))
+	//		}
+	//		if gold.SellPrice != "" {
+	//			builder.WriteString(fmt.Sprintf(" - <i>Bán:</i> <b>%s</b>", gold.SellPrice))
+	//		}
+	//		builder.WriteString("\n")
+	//	}
+	//	builder.WriteString("\n")
+	//	builder.WriteString(fmt.Sprintf("<i>(Cập nhật lúc: %s</i> - <i>Đơn vị tính: đồng/chỉ)</i>", board.UpdatedAt))
+	//}
+
+	builder.WriteString("OK!")
+
+	goldPriceHistory := map[string]interface{}{
+		"parse_mode": "HTML",
+		"text":       builder.String(),
+		"reply_markup": map[string]interface{}{
+			"inline_keyboard": []interface{}{
+				[]interface{}{
+					map[string]interface{}{
+						"text":          "<< Quay lại",
+						"callback_data": fmt.Sprintf("/back_historical_time_range_options_%s_%s", brand, product),
+					},
+				},
+			},
+		},
+	}
+
+	for k, v := range extras {
+		goldPriceHistory[k] = v
+	}
+
+	return goldPriceHistory
 }
 
 func (c *Client) loadComingSoon(extras map[string]interface{}) map[string]interface{} {
