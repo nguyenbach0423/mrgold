@@ -557,6 +557,9 @@ func (c *Client) loadHistoricalGoldPrice(brand string, product string, timeRange
 					break
 				}
 			}
+			if gold == nil {
+				continue
+			}
 			if result, exist := results[parts[1]]; !exist {
 				results[parts[1]] = struct {
 					Time      string
