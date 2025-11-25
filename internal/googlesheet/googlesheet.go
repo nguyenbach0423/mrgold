@@ -48,7 +48,7 @@ func (gs *GoogleSheet) Fetch() {
 }
 
 func (gs *GoogleSheet) fetchBoards() {
-	vr, err := gs.service.Spreadsheets.Values.Get(gs.spreadsheetId, "boards!A2:F").Do()
+	vr, err := gs.service.Spreadsheets.Values.Get(gs.spreadsheetId, "boards!A2:G").Do()
 	if err != nil {
 		log.Error().Err(err).Send()
 		return
@@ -95,7 +95,7 @@ func (gs *GoogleSheet) fetchBoards() {
 }
 
 func (gs *GoogleSheet) fetchHistories() {
-	vr, err := gs.service.Spreadsheets.Values.Get(gs.spreadsheetId, "histories!A2:F").Do()
+	vr, err := gs.service.Spreadsheets.Values.Get(gs.spreadsheetId, "histories!A2:G").Do()
 	if err != nil {
 		log.Error().Err(err).Send()
 		return
@@ -103,8 +103,6 @@ func (gs *GoogleSheet) fetchHistories() {
 
 	var histories = make(map[string]map[string]*store.GoldPriceBoard)
 	for _, value := range vr.Values {
-		log.Info().Interface("value", value).Send()
-
 		if len(value) < 7 {
 			continue
 		}
