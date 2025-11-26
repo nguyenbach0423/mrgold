@@ -572,9 +572,16 @@ func (c *Client) loadHistoricalGoldPrice(brand string, product string, timeRange
 				}
 			} else {
 				if result.Time == "" || result.Time < parts[0] {
-					result.Time = parts[0]
-					result.BrandName = v.BrandName
-					result.Gold = gold
+					result = struct {
+						Time      string
+						BrandName string
+						Gold      *store.Gold
+					}{
+						Time:      parts[0],
+						BrandName: v.BrandName,
+						Gold:      gold,
+					}
+					results[parts[1]] = result
 				}
 			}
 		}
