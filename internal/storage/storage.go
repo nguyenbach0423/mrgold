@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/coocood/freecache"
 	"github.com/rs/zerolog/log"
@@ -328,15 +329,43 @@ type CrawlMeta struct {
 	CrawledAt string
 }
 
-func (s *Storage) GetGoldIDs(brandCode string) map[string]int {
+func (s *Storage) GetBrandID(code string) (int, error) {
+	query := `select id from brands where code = ?`
+	row := s.persistent.QueryRow(query, code)
+
+	var brandID int
+	err := row.Scan(&brandID)
+	if err != nil {
+		return 0, err
+	}
+
+	return brandID, nil
+}
+
+func (s *Storage) GetCrawlMeta(brandID int) (*CrawlMeta, error) {
+	query := `select id, brand_id, updated_at, crawled_at from crawl_meta where brand_id = ?`
+	row := s.persistent.QueryRow(query, brandID)
+
+	var meta CrawlMeta
+	err := row.Scan(&meta.ID, &meta.BrandID, &meta.UpdatedAt, &meta.CrawledAt)
+	if err != nil {
+		return nil, err
+	}
+
+	return &meta, nil
+}
+
+func (s *Storage) GetGoldIDs(brandID int) map[string]int {
 	goldIDs := make(map[string]int)
 
-	query := `select id, code from golds where brand_id = (select id from brands where code = ?)`
-	rows, err := s.persistent.Query(query, brandCode)
+	query := `select id, code from golds where brand_id = ?`
+	rows, err := s.persistent.Query(query, brandID)
 	if err != nil {
 		return goldIDs
 	}
-	defer rows.Close()
+	defer func() {
+		_ = rows.Close()
+	}()
 
 	for rows.Next() {
 		var goldID int
@@ -350,7 +379,7 @@ func (s *Storage) GetGoldIDs(brandCode string) map[string]int {
 	return goldIDs
 }
 
-func (s *Storage) SaveGoldPrices(goldPrices []GoldPrice) error {
+func (s *Storage) SaveGoldPrices(goldPrices []GoldPrice, brandID int, updatedAt string) error {
 	tx, err := s.persistent.Begin()
 	if err != nil {
 		return err
@@ -360,6 +389,35 @@ func (s *Storage) SaveGoldPrices(goldPrices []GoldPrice) error {
 		_, err = tx.Exec(
 			`insert into gold_prices (gold_id, buy_price, sell_price, buy_price_text, sell_price_text, updated_at) values (?, ?, ?, ?, ?, ?)`,
 			goldPrice.GoldID, goldPrice.BuyPrice, goldPrice.SellPrice, goldPrice.BuyPriceText, goldPrice.SellPriceText, goldPrice.UpdatedAt,
+		)
+		if err != nil {
+			_ = tx.Rollback()
+			return err
+		}
+	}
+
+	now := time.Now().Format("2006/01/02 15:04:05")
+
+	var result sql.Result
+	result, err = tx.Exec(
+		`update crawl_meta set updated_at = ?, crawled_at = ? where brand_id = ?`,
+		updatedAt, now, brandID,
+	)
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	row, err := result.RowsAffected()
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	if row == 0 {
+		_, err = tx.Exec(
+			`insert into crawl_meta (brand_id, updated_at, crawled_at) values (?, ?, ?)`,
+			brandID, updatedAt, now,
 		)
 		if err != nil {
 			_ = tx.Rollback()

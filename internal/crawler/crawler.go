@@ -2,7 +2,9 @@ package crawler
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"regexp"
 	"slices"
@@ -151,6 +153,27 @@ func (c *Crawler) crawlSJCV2() {
 			return
 		}
 
+		brandID, err := c.stg.GetBrandID("sjc")
+		if err != nil {
+			if !errors.Is(err, sql.ErrNoRows) {
+				log.Error().Err(err).Send()
+			}
+			return
+		}
+
+		var crawlMeta *storage.CrawlMeta
+		crawlMeta, err = c.stg.GetCrawlMeta(brandID)
+		if err != nil {
+			if !errors.Is(err, sql.ErrNoRows) {
+				log.Error().Err(err).Send()
+			}
+			return
+		}
+
+		if crawlMeta.UpdatedAt == goldPriceBoard.UpdatedAt {
+			return
+		}
+
 		goldCodes := map[int]string{
 			1:   "sjc01",
 			17:  "sjc02",
@@ -166,7 +189,7 @@ func (c *Crawler) crawlSJCV2() {
 			161: "sjc12",
 		}
 
-		goldIDs := c.stg.GetGoldIDs("sjc")
+		goldIDs := c.stg.GetGoldIDs(brandID)
 		if len(goldIDs) == 0 {
 			return
 		}
@@ -191,8 +214,6 @@ func (c *Crawler) crawlSJCV2() {
 			if !exists {
 				continue
 			}
-
-			var err error
 
 			var buyPrice int
 			var sellPrice int
@@ -219,7 +240,7 @@ func (c *Crawler) crawlSJCV2() {
 			})
 		}
 
-		if err := c.stg.SaveGoldPrices(goldPrices); err != nil {
+		if err = c.stg.SaveGoldPrices(goldPrices, brandID, goldPriceBoard.UpdatedAt); err != nil {
 			log.Error().Err(err).Send()
 		}
 	}
@@ -337,13 +358,35 @@ func (c *Crawler) crawlDOJIV2() {
 			"Nữ trang 999":                      "doji04",
 		}
 
-		goldIDs := c.stg.GetGoldIDs("doji")
-		if len(goldIDs) == 0 {
+		var brandID int
+		brandID, err = c.stg.GetBrandID("doji")
+		if err != nil {
+			if !errors.Is(err, sql.ErrNoRows) {
+				log.Error().Err(err).Send()
+			}
 			return
 		}
 
 		updatedAt := strings.TrimSpace(doc.Find("span.update-time").Text())
 		updatedAt = strings.ReplaceAll(updatedAt, "Cập nhập lúc: ", "")
+
+		var crawlMeta *storage.CrawlMeta
+		crawlMeta, err = c.stg.GetCrawlMeta(brandID)
+		if err != nil {
+			if !errors.Is(err, sql.ErrNoRows) {
+				log.Error().Err(err).Send()
+			}
+			return
+		}
+
+		if crawlMeta.UpdatedAt == updatedAt {
+			return
+		}
+
+		goldIDs := c.stg.GetGoldIDs(brandID)
+		if len(goldIDs) == 0 {
+			return
+		}
 
 		var goldPrices []storage.GoldPrice
 
@@ -390,7 +433,7 @@ func (c *Crawler) crawlDOJIV2() {
 			})
 		})
 
-		if err = c.stg.SaveGoldPrices(goldPrices); err != nil {
+		if err = c.stg.SaveGoldPrices(goldPrices, brandID, updatedAt); err != nil {
 			log.Error().Err(err).Send()
 		}
 	}
@@ -492,6 +535,35 @@ func (c *Crawler) crawlPNJV2() {
 			return
 		}
 
+		brandID, err := c.stg.GetBrandID("pnj")
+		if err != nil {
+			if !errors.Is(err, sql.ErrNoRows) {
+				log.Error().Err(err).Send()
+			}
+			return
+		}
+
+		t, err := time.Parse("02/01/2006 15:04:05", goldPriceBoard.UpdatedAt)
+		if err != nil {
+			log.Error().Err(err).Send()
+			return
+		}
+
+		updatedAt := t.Format("15:04 02/01/2006")
+
+		var crawlMeta *storage.CrawlMeta
+		crawlMeta, err = c.stg.GetCrawlMeta(brandID)
+		if err != nil {
+			if !errors.Is(err, sql.ErrNoRows) {
+				log.Error().Err(err).Send()
+			}
+			return
+		}
+
+		if crawlMeta.UpdatedAt == updatedAt {
+			return
+		}
+
 		goldCodes := map[string]string{
 			"SJC":  "pnj01",
 			"N24K": "pnj02",
@@ -513,18 +585,10 @@ func (c *Crawler) crawlPNJV2() {
 			"33":   "pnj18",
 		}
 
-		goldIDs := c.stg.GetGoldIDs("pnj")
+		goldIDs := c.stg.GetGoldIDs(brandID)
 		if len(goldIDs) == 0 {
 			return
 		}
-
-		t, err := time.Parse("02/01/2006 15:04:05", goldPriceBoard.UpdatedAt)
-		if err != nil {
-			log.Error().Err(err).Send()
-			return
-		}
-
-		updatedAt := t.Format("15:04 02/01/2006")
 
 		var goldPrices []storage.GoldPrice
 
@@ -562,7 +626,7 @@ func (c *Crawler) crawlPNJV2() {
 			})
 		}
 
-		if err = c.stg.SaveGoldPrices(goldPrices); err != nil {
+		if err = c.stg.SaveGoldPrices(goldPrices, brandID, updatedAt); err != nil {
 			log.Error().Err(err).Send()
 		}
 	}
@@ -675,17 +739,12 @@ func (c *Crawler) crawlBTMCV2() {
 			return
 		}
 
-		goldCodes := map[string]string{
-			"Vàng miếng VRTL Bảo Tín Minh Châu":      "btmc01",
-			"Nhẫn tròn trơn Bảo Tín Minh Châu":       "btmc02",
-			"Quà mừng bản vị vàng Bảo Tín Minh Châu": "btmc03",
-			"Vàng miếng SJC":                         "btmc04",
-			"Trang sức Vàng Rồng Thăng Long 999.9":   "btmc05",
-			"Trang sức Vàng Rồng Thăng Long 99.9":    "btmc06",
-		}
-
-		goldIDs := c.stg.GetGoldIDs("btmc")
-		if len(goldIDs) == 0 {
+		var brandID int
+		brandID, err = c.stg.GetBrandID("btmc")
+		if err != nil {
+			if !errors.Is(err, sql.ErrNoRows) {
+				log.Error().Err(err).Send()
+			}
 			return
 		}
 
@@ -695,6 +754,33 @@ func (c *Crawler) crawlBTMCV2() {
 		t, _ := time.Parse("02/01/2006 15:04", updatedAt)
 
 		updatedAt = t.Format("15:04 02/01/2006")
+
+		var crawlMeta *storage.CrawlMeta
+		crawlMeta, err = c.stg.GetCrawlMeta(brandID)
+		if err != nil {
+			if !errors.Is(err, sql.ErrNoRows) {
+				log.Error().Err(err).Send()
+			}
+			return
+		}
+
+		if crawlMeta.UpdatedAt == updatedAt {
+			return
+		}
+
+		goldCodes := map[string]string{
+			"Vàng miếng VRTL Bảo Tín Minh Châu":      "btmc01",
+			"Nhẫn tròn trơn Bảo Tín Minh Châu":       "btmc02",
+			"Quà mừng bản vị vàng Bảo Tín Minh Châu": "btmc03",
+			"Vàng miếng SJC":                         "btmc04",
+			"Trang sức Vàng Rồng Thăng Long 999.9":   "btmc05",
+			"Trang sức Vàng Rồng Thăng Long 99.9":    "btmc06",
+		}
+
+		goldIDs := c.stg.GetGoldIDs(brandID)
+		if len(goldIDs) == 0 {
+			return
+		}
 
 		var goldPrices []storage.GoldPrice
 
@@ -778,7 +864,7 @@ func (c *Crawler) crawlBTMCV2() {
 			})
 		})
 
-		if err = c.stg.SaveGoldPrices(goldPrices); err != nil {
+		if err = c.stg.SaveGoldPrices(goldPrices, brandID, updatedAt); err != nil {
 			log.Error().Err(err).Send()
 		}
 	}
@@ -871,14 +957,36 @@ func (c *Crawler) crawlBTMHV2() {
 			"Tiểu Kim Cát - 0,3 chỉ":          "btmh07",
 		}
 
-		goldIDs := c.stg.GetGoldIDs("btmh")
-		if len(goldIDs) == 0 {
+		var brandID int
+		brandID, err = c.stg.GetBrandID("btmh")
+		if err != nil {
+			if !errors.Is(err, sql.ErrNoRows) {
+				log.Error().Err(err).Send()
+			}
 			return
 		}
 
 		updatedAt := strings.TrimSpace(doc.Find("p.note").Text())
 		updatedAt = strings.ReplaceAll(updatedAt, "(Cập nhật lúc ", "")
 		updatedAt = strings.ReplaceAll(updatedAt, ") (đơn vị tính: đồng/chỉ)", "")
+
+		var crawlMeta *storage.CrawlMeta
+		crawlMeta, err = c.stg.GetCrawlMeta(brandID)
+		if err != nil {
+			if !errors.Is(err, sql.ErrNoRows) {
+				log.Error().Err(err).Send()
+			}
+			return
+		}
+
+		if crawlMeta.UpdatedAt == updatedAt {
+			return
+		}
+
+		goldIDs := c.stg.GetGoldIDs(brandID)
+		if len(goldIDs) == 0 {
+			return
+		}
 
 		var goldPrices []storage.GoldPrice
 
@@ -934,7 +1042,7 @@ func (c *Crawler) crawlBTMHV2() {
 			})
 		})
 
-		if err = c.stg.SaveGoldPrices(goldPrices); err != nil {
+		if err = c.stg.SaveGoldPrices(goldPrices, brandID, updatedAt); err != nil {
 			log.Error().Err(err).Send()
 		}
 	}
