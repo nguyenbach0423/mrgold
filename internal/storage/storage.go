@@ -36,7 +36,7 @@ func NewStorage() (*Storage, error) {
 	}()
 
 	var localFile *os.File
-	localFile, err = os.Create("mrgold.sqlite")
+	localFile, err = os.Create("/tmp/mrgold.sqlite")
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func NewStorage() (*Storage, error) {
 }
 
 func (s *Storage) Sync() {
-	localFile, err := os.Open("mrgold.sqlite")
+	localFile, err := os.Open("/tmp/mrgold.sqlite")
 	if err != nil {
 		log.Error().Err(err).Send()
 		return
