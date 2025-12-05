@@ -192,8 +192,22 @@ func (c *Crawler) crawlSJCV2() {
 				continue
 			}
 
-			buyPrice, buyPriceText := convertPriceFromString(goldPrice.BuyPrice)
-			sellPrice, sellPriceText := convertPriceFromString(goldPrice.SellPrice)
+			var err error
+
+			var buyPrice int
+			var sellPrice int
+
+			var buyPriceText string
+			var sellPriceText string
+
+			buyPrice, buyPriceText, err = convertPriceFromString(goldPrice.BuyPrice)
+			if err != nil {
+				continue
+			}
+			sellPrice, sellPriceText, err = convertPriceFromString(goldPrice.SellPrice)
+			if err != nil {
+				continue
+			}
 
 			goldPrices = append(goldPrices, storage.GoldPrice{
 				GoldID:        id,
@@ -351,8 +365,20 @@ func (c *Crawler) crawlDOJIV2() {
 				return
 			}
 
-			buyPrice, buyPriceText := convertPriceFromString(strings.TrimSpace(s.Find("td.goldprice-td-0 div.item-relative").Text()))
-			sellPrice, sellPriceText := convertPriceFromString(strings.TrimSpace(s.Find("td.goldprice-td-1 div.item-relative").Text()))
+			var buyPrice int
+			var sellPrice int
+
+			var buyPriceText string
+			var sellPriceText string
+
+			buyPrice, buyPriceText, err = convertPriceFromString(strings.TrimSpace(s.Find("td.goldprice-td-0 div.item-relative").Text()))
+			if err != nil {
+				return
+			}
+			sellPrice, sellPriceText, err = convertPriceFromString(strings.TrimSpace(s.Find("td.goldprice-td-1 div.item-relative").Text()))
+			if err != nil {
+				return
+			}
 
 			goldPrices = append(goldPrices, storage.GoldPrice{
 				GoldID:        id,
@@ -518,7 +544,13 @@ func (c *Crawler) crawlPNJV2() {
 			}
 
 			buyPrice, buyPriceText := convertPriceFromNumeric(goldPrice.BuyPrice)
+			if buyPrice == 0 || buyPriceText == "" {
+				continue
+			}
 			sellPrice, sellPriceText := convertPriceFromNumeric(goldPrice.SellPrice)
+			if sellPrice == 0 || sellPriceText == "" {
+				continue
+			}
 
 			goldPrices = append(goldPrices, storage.GoldPrice{
 				GoldID:        id,
@@ -721,8 +753,20 @@ func (c *Crawler) crawlBTMCV2() {
 				return
 			}
 
-			buyPrice, buyPriceText := convertPriceFromString(rawBuyPrice)
-			sellPrice, sellPriceText := convertPriceFromString(rawSellPrice)
+			var buyPrice int
+			var sellPrice int
+
+			var buyPriceText string
+			var sellPriceText string
+
+			buyPrice, buyPriceText, err = convertPriceFromString(rawBuyPrice)
+			if err != nil {
+				return
+			}
+			sellPrice, sellPriceText, err = convertPriceFromString(rawSellPrice)
+			if err != nil {
+				return
+			}
 
 			goldPrices = append(goldPrices, storage.GoldPrice{
 				GoldID:        id,
@@ -865,8 +909,20 @@ func (c *Crawler) crawlBTMHV2() {
 				return
 			}
 
-			buyPrice, buyPriceText := convertPriceFromString(cells[1])
-			sellPrice, sellPriceText := convertPriceFromString(cells[2])
+			var buyPrice int
+			var sellPrice int
+
+			var buyPriceText string
+			var sellPriceText string
+
+			buyPrice, buyPriceText, err = convertPriceFromString(cells[1])
+			if err != nil {
+				return
+			}
+			sellPrice, sellPriceText, err = convertPriceFromString(cells[2])
+			if err != nil {
+				return
+			}
 
 			goldPrices = append(goldPrices, storage.GoldPrice{
 				GoldID:        id,
@@ -925,9 +981,9 @@ func convertStringPrice(s string) string {
 	return strings.Join(result, ",")
 }
 
-func convertPriceFromString(s string) (int, string) {
+func convertPriceFromString(s string) (int, string, error) {
 	if s == "" {
-		return 0, ""
+		return 0, "", nil
 	}
 
 	s = strings.ReplaceAll(s, ",", "")
@@ -936,7 +992,7 @@ func convertPriceFromString(s string) (int, string) {
 	n, err := strconv.Atoi(s)
 	if err != nil {
 		log.Error().Err(err).Send()
-		return 0, ""
+		return 0, "", err
 	}
 	n = n * 1000
 
@@ -949,7 +1005,7 @@ func convertPriceFromString(s string) (int, string) {
 	}
 
 	result = append([]string{s}, result...)
-	return n, strings.Join(result, ",")
+	return n, strings.Join(result, ","), nil
 }
 
 func convertPriceFromNumeric(n int) (int, string) {
