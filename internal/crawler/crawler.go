@@ -183,7 +183,7 @@ func (c *Crawler) crawlSJCV2() {
 			81:  "sjc06",
 			97:  "sjc07",
 			113: "sjc08",
-			123: "sjc09",
+			129: "sjc09",
 			210: "sjc10",
 			145: "sjc11",
 			161: "sjc12",
@@ -1102,7 +1102,9 @@ func convertPriceFromString(s string) (int, string, error) {
 		log.Error().Err(err).Send()
 		return 0, "", err
 	}
-	n = n * 1000
+	if n < 100_000 {
+		n = n * 1000
+	}
 
 	s = strconv.Itoa(n)
 	var result []string
