@@ -21,7 +21,7 @@ type Storage struct {
 }
 
 func NewStorage() (*Storage, error) {
-	googleDrive, err := drive.NewService(context.Background(), option.WithCredentialsFile("mr-gold-478802.json"))
+	googleDrive, err := drive.NewService(context.Background(), option.WithCredentialsJSON([]byte(os.Getenv("GOOGLE_APIS_CREDENTIALS"))))
 	if err != nil {
 		return nil, err
 	}
