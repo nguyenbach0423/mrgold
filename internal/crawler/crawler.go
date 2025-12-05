@@ -248,10 +248,10 @@ func (c *Crawler) crawlDOJI() {
 		var golds []store.Gold
 
 		idMatrix := map[string]string{
-			"AVPL/SJC": "01",
+			"AVPL/SJC":                          "01",
 			"Nhẫn tròn 9999 (Hưng Thịnh Vượng)": "02",
-			"Nữ trang 9999": "03",
-			"Nữ trang 999":  "04",
+			"Nữ trang 9999":                     "03",
+			"Nữ trang 999":                      "04",
 		}
 
 		doc.Find("table.goldprice-view tbody tr").Each(func(_ int, s *goquery.Selection) {
@@ -317,10 +317,10 @@ func (c *Crawler) crawlDOJIV2() {
 		}
 
 		goldCodes := map[string]string{
-			"AVPL/SJC": "doji01",
+			"AVPL/SJC":                          "doji01",
 			"Nhẫn tròn 9999 (Hưng Thịnh Vượng)": "doji02",
-			"Nữ trang 9999": "doji03",
-			"Nữ trang 999":  "doji04",
+			"Nữ trang 9999":                     "doji03",
+			"Nữ trang 999":                      "doji04",
 		}
 
 		goldIDs := c.stg.GetGoldIDs("doji")
@@ -896,7 +896,7 @@ func convertNumericPrice(n int) string {
 	}
 
 	result = append([]string{s}, result...)
-	return strings.Join(result, ".")
+	return strings.Join(result, ",")
 }
 
 func convertStringPrice(s string) string {
@@ -931,6 +931,7 @@ func convertPriceFromString(s string) (int, string) {
 	}
 
 	s = strings.ReplaceAll(s, ",", "")
+	s = strings.ReplaceAll(s, ".", "")
 
 	n, err := strconv.Atoi(s)
 	if err != nil {
@@ -963,7 +964,7 @@ func convertPriceFromNumeric(n int) (int, string) {
 	}
 
 	result = append([]string{s}, result...)
-	return n, strings.Join(result, ".")
+	return n, strings.Join(result, ",")
 }
 
 func convertGoldNameDOJI(s string) string {
