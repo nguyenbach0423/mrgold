@@ -12,6 +12,7 @@ import (
 	"github.com/mrgold/internal/googlesheet"
 	"github.com/mrgold/internal/httpclient"
 	"github.com/mrgold/internal/httpserver"
+	"github.com/mrgold/internal/storage"
 	"github.com/mrgold/internal/store"
 	"github.com/mrgold/internal/telegram"
 	"github.com/rs/zerolog"
@@ -19,6 +20,12 @@ import (
 )
 
 func main() {
+	stg, err := storage.NewStorage()
+	if err != nil {
+		log.Error().Err(err).Send()
+		os.Exit(1)
+	}
+
 	s := store.NewStore()
 
 	sheet := googlesheet.NewGoogleSheet(
@@ -39,6 +46,7 @@ func main() {
 	)
 
 	c := crawler.NewCrawler(
+		stg,
 		crawler.WithHTTPClient(httpClient),
 		crawler.WithStore(s),
 	)
@@ -76,6 +84,7 @@ func main() {
 			}
 
 			sheet.Sync()
+			stg.Sync()
 		}
 	}()
 
@@ -113,6 +122,7 @@ func main() {
 	wg.Wait()
 
 	sheet.Sync()
+	stg.Close()
 
 	if ok := httpServer.Stop(); !ok {
 		os.Exit(1)

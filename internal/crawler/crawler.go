@@ -13,6 +13,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mrgold/internal/httpclient"
+	"github.com/mrgold/internal/storage"
 	"github.com/mrgold/internal/store"
 	"github.com/rs/zerolog/log"
 )
@@ -20,12 +21,14 @@ import (
 type Crawler struct {
 	mu         sync.RWMutex
 	httpClient *httpclient.Client
+	stg        *storage.Storage
 	store      *store.Store
 }
 
-func NewCrawler(opts ...func(*Crawler)) *Crawler {
+func NewCrawler(stg *storage.Storage, opts ...func(*Crawler)) *Crawler {
 	c := &Crawler{
 		httpClient: httpclient.NewClient(),
+		stg:        stg,
 		store:      store.NewStore(),
 	}
 
@@ -54,6 +57,11 @@ func (c *Crawler) Crawl() {
 	go c.crawlPNJ()
 	go c.crawlBTMC()
 	go c.crawlBTMH()
+	go c.crawlSJCV2()
+	go c.crawlDOJIV2()
+	go c.crawlPNJV2()
+	go c.crawlBTMCV2()
+	go c.crawlBTMHV2()
 }
 
 func (c *Crawler) crawlSJC() {
@@ -117,6 +125,92 @@ func (c *Crawler) crawlSJC() {
 	}
 }
 
+func (c *Crawler) crawlSJCV2() {
+	resp, ok := c.httpClient.Do(
+		httpclient.NewRequest(
+			http.MethodGet,
+			"https://sjc.com.vn/GoldPrice/Services/PriceService.ashx",
+			httpclient.WithHeaders(httpclient.DefaultHeaders),
+		),
+	)
+
+	if ok {
+		var goldPriceBoard struct {
+			UpdatedAt  string `json:"latestDate"`
+			GoldPrices []struct {
+				Id        int    `json:"Id"`
+				Branch    string `json:"BranchName"`
+				Name      string `json:"TypeName"`
+				BuyPrice  string `json:"Buy"`
+				SellPrice string `json:"Sell"`
+			} `json:"data"`
+		}
+
+		if err := json.Unmarshal(resp.Body, &goldPriceBoard); err != nil {
+			log.Error().Err(err).Send()
+			return
+		}
+
+		goldCodes := map[int]string{
+			1:   "sjc01",
+			17:  "sjc02",
+			33:  "sjc03",
+			49:  "sjc04",
+			65:  "sjc05",
+			81:  "sjc06",
+			97:  "sjc07",
+			113: "sjc08",
+			123: "sjc09",
+			210: "sjc10",
+			145: "sjc11",
+			161: "sjc12",
+		}
+
+		goldIDs := c.stg.GetGoldIDs("sjc")
+		if len(goldIDs) == 0 {
+			return
+		}
+
+		var goldPrices []storage.GoldPrice
+
+		for _, goldPrice := range goldPriceBoard.GoldPrices {
+			if goldPrice.Branch != "Hồ Chí Minh" {
+				continue
+			}
+
+			var exists bool
+
+			var code string
+			code, exists = goldCodes[goldPrice.Id]
+			if !exists {
+				continue
+			}
+
+			var id int
+			id, exists = goldIDs[code]
+			if !exists {
+				continue
+			}
+
+			buyPrice, buyPriceText := convertPriceFromString(goldPrice.BuyPrice)
+			sellPrice, sellPriceText := convertPriceFromString(goldPrice.SellPrice)
+
+			goldPrices = append(goldPrices, storage.GoldPrice{
+				GoldID:        id,
+				BuyPrice:      buyPrice,
+				SellPrice:     sellPrice,
+				BuyPriceText:  buyPriceText,
+				SellPriceText: sellPriceText,
+				UpdatedAt:     goldPriceBoard.UpdatedAt,
+			})
+		}
+
+		if err := c.stg.SaveGoldPrices(goldPrices); err != nil {
+			log.Error().Err(err).Send()
+		}
+	}
+}
+
 func (c *Crawler) crawlDOJI() {
 	resp, ok := c.httpClient.Do(
 		httpclient.NewRequest(
@@ -154,10 +248,10 @@ func (c *Crawler) crawlDOJI() {
 		var golds []store.Gold
 
 		idMatrix := map[string]string{
-			"AVPL/SJC": "01",
+			"AVPL/SJC":                          "01",
 			"Nhẫn tròn 9999 (Hưng Thịnh Vượng)": "02",
-			"Nữ trang 9999": "03",
-			"Nữ trang 999":  "04",
+			"Nữ trang 9999":                     "03",
+			"Nữ trang 999":                      "04",
 		}
 
 		doc.Find("table.goldprice-view tbody tr").Each(func(_ int, s *goquery.Selection) {
@@ -185,6 +279,94 @@ func (c *Crawler) crawlDOJI() {
 			Golds:     golds,
 			UpdatedAt: updatedAt,
 		})
+	}
+}
+
+func (c *Crawler) crawlDOJIV2() {
+	resp, ok := c.httpClient.Do(
+		httpclient.NewRequest(
+			http.MethodGet,
+			"https://giavang.doji.vn/",
+			httpclient.WithHeaders(httpclient.DefaultHeaders),
+			httpclient.WithQueryParams(map[string][]string{
+				"q": {"doji/get/json/gia_vang_quoc_te"},
+			}),
+		),
+	)
+
+	if ok {
+		respBody := resp.Body
+
+		respBody = bytes.TrimPrefix(respBody, []byte("\xef\xbb\xbf"))
+		respBody = bytes.ReplaceAll(respBody, []byte(`\x3c`), []byte("<"))
+		respBody = bytes.ReplaceAll(respBody, []byte(`\x3e`), []byte(">"))
+
+		var goldPriceBoard struct {
+			Data string `json:"main_price"`
+		}
+
+		if err := json.Unmarshal(respBody, &goldPriceBoard); err != nil {
+			log.Error().Err(err).Send()
+			return
+		}
+
+		doc, err := goquery.NewDocumentFromReader(strings.NewReader(goldPriceBoard.Data))
+		if err != nil {
+			log.Error().Err(err).Send()
+			return
+		}
+
+		goldCodes := map[string]string{
+			"AVPL/SJC":                          "doji01",
+			"Nhẫn tròn 9999 (Hưng Thịnh Vượng)": "doji02",
+			"Nữ trang 9999":                     "doji03",
+			"Nữ trang 999":                      "doji04",
+		}
+
+		goldIDs := c.stg.GetGoldIDs("doji")
+		if len(goldIDs) == 0 {
+			return
+		}
+
+		updatedAt := strings.TrimSpace(doc.Find("span.update-time").Text())
+		updatedAt = strings.ReplaceAll(updatedAt, "Cập nhập lúc: ", "")
+
+		var goldPrices []storage.GoldPrice
+
+		doc.Find("table.goldprice-view tbody tr").Each(func(_ int, s *goquery.Selection) {
+			name := strings.TrimSpace(s.Find("td.first span.title").Text())
+			name = convertGoldNameDOJI(name)
+
+			var exists bool
+
+			var code string
+			code, exists = goldCodes[name]
+			if !exists {
+				return
+			}
+
+			var id int
+			id, exists = goldIDs[code]
+			if !exists {
+				return
+			}
+
+			buyPrice, buyPriceText := convertPriceFromString(strings.TrimSpace(s.Find("td.goldprice-td-0 div.item-relative").Text()))
+			sellPrice, sellPriceText := convertPriceFromString(strings.TrimSpace(s.Find("td.goldprice-td-1 div.item-relative").Text()))
+
+			goldPrices = append(goldPrices, storage.GoldPrice{
+				GoldID:        id,
+				BuyPrice:      buyPrice,
+				SellPrice:     sellPrice,
+				BuyPriceText:  buyPriceText,
+				SellPriceText: sellPriceText,
+				UpdatedAt:     updatedAt,
+			})
+		})
+
+		if err = c.stg.SaveGoldPrices(goldPrices); err != nil {
+			log.Error().Err(err).Send()
+		}
 	}
 }
 
@@ -253,6 +435,104 @@ func (c *Crawler) crawlPNJ() {
 			Golds:     golds,
 			UpdatedAt: t.Format("15:04 02/01/2006"),
 		})
+	}
+}
+
+func (c *Crawler) crawlPNJV2() {
+	resp, ok := c.httpClient.Do(
+		httpclient.NewRequest(
+			http.MethodGet,
+			"https://edge-api.pnj.io/ecom-frontend/v1/get-gold-price",
+			httpclient.WithQueryParams(map[string][]string{
+				"zone": {"11"},
+			}),
+			httpclient.WithHeaders(httpclient.DefaultHeaders),
+		),
+	)
+
+	if ok {
+		var goldPriceBoard struct {
+			GoldPrices []struct {
+				Code      string `json:"masp"`
+				Name      string `json:"tensp"`
+				BuyPrice  int    `json:"giamua"`
+				SellPrice int    `json:"giaban"`
+			} `json:"data"`
+			UpdatedAt string `json:"updateDate"`
+		}
+
+		if err := json.Unmarshal(resp.Body, &goldPriceBoard); err != nil {
+			log.Error().Err(err).Send()
+			return
+		}
+
+		goldCodes := map[string]string{
+			"SJC":  "pnj01",
+			"N24K": "pnj02",
+			"KB":   "pnj03",
+			"TL":   "pnj04",
+			"PNJ":  "pnj05",
+			"24K":  "pnj06",
+			"999":  "pnj07",
+			"9920": "pnj08",
+			"99":   "pnj09",
+			"22K":  "pnj10",
+			"75":   "pnj11",
+			"68":   "pnj12",
+			"65":   "pnj13",
+			"61":   "pnj14",
+			"58.5": "pnj15",
+			"41":   "pnj16",
+			"37.5": "pnj17",
+			"33":   "pnj18",
+		}
+
+		goldIDs := c.stg.GetGoldIDs("pnj")
+		if len(goldIDs) == 0 {
+			return
+		}
+
+		t, err := time.Parse("02/01/2006 15:04:05", goldPriceBoard.UpdatedAt)
+		if err != nil {
+			log.Error().Err(err).Send()
+			return
+		}
+
+		updatedAt := t.Format("15:04 02/01/2006")
+
+		var goldPrices []storage.GoldPrice
+
+		for _, goldPrice := range goldPriceBoard.GoldPrices {
+			var exists bool
+
+			var code string
+			code, exists = goldCodes[goldPrice.Code]
+			if !exists {
+				continue
+			}
+
+			var id int
+			id, exists = goldIDs[code]
+			if !exists {
+				continue
+			}
+
+			buyPrice, buyPriceText := convertPriceFromNumeric(goldPrice.BuyPrice)
+			sellPrice, sellPriceText := convertPriceFromNumeric(goldPrice.SellPrice)
+
+			goldPrices = append(goldPrices, storage.GoldPrice{
+				GoldID:        id,
+				BuyPrice:      buyPrice,
+				SellPrice:     sellPrice,
+				BuyPriceText:  buyPriceText,
+				SellPriceText: sellPriceText,
+				UpdatedAt:     updatedAt,
+			})
+		}
+
+		if err = c.stg.SaveGoldPrices(goldPrices); err != nil {
+			log.Error().Err(err).Send()
+		}
 	}
 }
 
@@ -347,6 +627,119 @@ func (c *Crawler) crawlBTMC() {
 	}
 }
 
+func (c *Crawler) crawlBTMCV2() {
+	resp, ok := c.httpClient.Do(
+		httpclient.NewRequest(
+			http.MethodGet,
+			"https://btmc.vn/bieu-do-gia-vang.html?t=ngay&srsltid=AfmBOopkLFTaGSDib4E6WuWUNcG1Z5Q9vmfqzNBuJUHwlCoYX66i8HPl",
+			httpclient.WithHeaders(httpclient.DefaultHeaders),
+		),
+	)
+
+	if ok {
+		doc, err := goquery.NewDocumentFromReader(bytes.NewReader(resp.Body))
+		if err != nil {
+			log.Error().Err(err).Send()
+			return
+		}
+
+		goldCodes := map[string]string{
+			"Vàng miếng VRTL Bảo Tín Minh Châu":      "btmc01",
+			"Nhẫn tròn trơn Bảo Tín Minh Châu":       "btmc02",
+			"Quà mừng bản vị vàng Bảo Tín Minh Châu": "btmc03",
+			"Vàng miếng SJC":                         "btmc04",
+			"Trang sức Vàng Rồng Thăng Long 999.9":   "btmc05",
+			"Trang sức Vàng Rồng Thăng Long 99.9":    "btmc06",
+		}
+
+		goldIDs := c.stg.GetGoldIDs("btmc")
+		if len(goldIDs) == 0 {
+			return
+		}
+
+		updatedAt := strings.TrimSpace(doc.Find("p.note span").Text())
+		updatedAt = strings.ReplaceAll(updatedAt, "Cập nhật lúc ", "")
+
+		t, _ := time.Parse("02/01/2006 15:04", updatedAt)
+
+		updatedAt = t.Format("15:04 02/01/2006")
+
+		var goldPrices []storage.GoldPrice
+
+		doc.Find("table.bd_price_home tr").Each(func(_ int, s *goquery.Selection) {
+			var cells []string
+
+			s.Find("td").Each(func(_ int, s *goquery.Selection) {
+				cells = append(cells, strings.TrimSpace(s.Text()))
+			})
+
+			if len(cells) == 0 {
+				return
+			}
+
+			var name = ""
+			var rawBuyPrice = ""
+			var rawSellPrice = ""
+
+			pattern := regexp.MustCompile("^[0-9]+$")
+
+			if len(cells) == 5 {
+				name = strings.ReplaceAll(cells[1], "  ", " ")
+				if pattern.MatchString(cells[3]) {
+					rawBuyPrice = cells[3]
+				}
+				if pattern.MatchString(cells[4]) {
+					rawSellPrice = cells[4]
+				}
+			} else if len(cells) == 4 {
+				name = strings.ReplaceAll(cells[0], "  ", " ")
+				if pattern.MatchString(cells[2]) {
+					rawBuyPrice = cells[2]
+				}
+				if pattern.MatchString(cells[3]) {
+					rawSellPrice = cells[3]
+				}
+			}
+
+			if strings.Contains(strings.ToLower(name), "nguyên liệu") {
+				return
+			}
+
+			name = convertGoldNameBTMC(name)
+
+			var exists bool
+
+			var code string
+			code, exists = goldCodes[name]
+			if !exists {
+				return
+			}
+
+			var id int
+			id, exists = goldIDs[code]
+			if !exists {
+				return
+			}
+
+			buyPrice, buyPriceText := convertPriceFromString(rawBuyPrice)
+			sellPrice, sellPriceText := convertPriceFromString(rawSellPrice)
+
+			goldPrices = append(goldPrices, storage.GoldPrice{
+				GoldID:        id,
+				BuyPrice:      buyPrice,
+				SellPrice:     sellPrice,
+				BuyPriceText:  buyPriceText,
+				SellPriceText: sellPriceText,
+				UpdatedAt:     updatedAt,
+			})
+		})
+
+		if err = c.stg.SaveGoldPrices(goldPrices); err != nil {
+			log.Error().Err(err).Send()
+		}
+	}
+}
+
 func (c *Crawler) crawlBTMH() {
 	resp, ok := c.httpClient.Do(
 		httpclient.NewRequest(
@@ -408,6 +801,89 @@ func (c *Crawler) crawlBTMH() {
 	}
 }
 
+func (c *Crawler) crawlBTMHV2() {
+	resp, ok := c.httpClient.Do(
+		httpclient.NewRequest(
+			http.MethodGet,
+			"https://baotinmanhhai.vn/gia-vang-hom-nay",
+			httpclient.WithHeaders(httpclient.DefaultHeaders),
+		),
+	)
+
+	if ok {
+		doc, err := goquery.NewDocumentFromReader(bytes.NewReader(resp.Body))
+		if err != nil {
+			log.Error().Err(err).Send()
+			return
+		}
+
+		goldCodes := map[string]string{
+			"Nhẫn ép vỉ Kim Gia Bảo":          "btmh01",
+			"Vàng miếng SJC (Cty CP BTMH)":    "btmh02",
+			"Nhẫn ép vỉ Vàng Rồng Thăng Long": "btmh03",
+			"Đồng vàng Kim Gia Bảo hoa sen":   "btmh04",
+			"Vàng nữ trang 999.9":             "btmh05",
+			"Vàng nữ trang 99.9":              "btmh06",
+			"Tiểu Kim Cát - 0,3 chỉ":          "btmh07",
+		}
+
+		goldIDs := c.stg.GetGoldIDs("btmh")
+		if len(goldIDs) == 0 {
+			return
+		}
+
+		updatedAt := strings.TrimSpace(doc.Find("p.note").Text())
+		updatedAt = strings.ReplaceAll(updatedAt, "(Cập nhật lúc ", "")
+		updatedAt = strings.ReplaceAll(updatedAt, ") (đơn vị tính: đồng/chỉ)", "")
+
+		var goldPrices []storage.GoldPrice
+
+		doc.Find("table.gold-table-content tbody tr").Each(func(_ int, s *goquery.Selection) {
+			var cells []string
+
+			s.Find("td").Each(func(_ int, s *goquery.Selection) {
+				cells = append(cells, strings.TrimSpace(s.Text()))
+			})
+
+			if len(cells) == 0 {
+				return
+			}
+
+			name := cells[0]
+
+			var exists bool
+
+			var code string
+			code, exists = goldCodes[name]
+			if !exists {
+				return
+			}
+
+			var id int
+			id, exists = goldIDs[code]
+			if !exists {
+				return
+			}
+
+			buyPrice, buyPriceText := convertPriceFromString(cells[1])
+			sellPrice, sellPriceText := convertPriceFromString(cells[2])
+
+			goldPrices = append(goldPrices, storage.GoldPrice{
+				GoldID:        id,
+				BuyPrice:      buyPrice,
+				SellPrice:     sellPrice,
+				BuyPriceText:  buyPriceText,
+				SellPriceText: sellPriceText,
+				UpdatedAt:     updatedAt,
+			})
+		})
+
+		if err = c.stg.SaveGoldPrices(goldPrices); err != nil {
+			log.Error().Err(err).Send()
+		}
+	}
+}
+
 func convertNumericPrice(n int) string {
 	n = n * 1000
 
@@ -447,6 +923,47 @@ func convertStringPrice(s string) string {
 
 	result = append([]string{s}, result...)
 	return strings.Join(result, ",")
+}
+
+func convertPriceFromString(s string) (int, string) {
+	if s == "" {
+		return 0, ""
+	}
+
+	s = strings.ReplaceAll(s, ",", "")
+
+	n, err := strconv.Atoi(s)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return 0, ""
+	}
+	n = n * 1000
+
+	s = strconv.Itoa(n)
+	var result []string
+
+	for len(s) > 3 {
+		result = append([]string{s[len(s)-3:]}, result...)
+		s = s[:len(s)-3]
+	}
+
+	result = append([]string{s}, result...)
+	return n, strings.Join(result, ",")
+}
+
+func convertPriceFromNumeric(n int) (int, string) {
+	n = n * 1000
+
+	s := strconv.Itoa(n)
+	var result []string
+
+	for len(s) > 3 {
+		result = append([]string{s[len(s)-3:]}, result...)
+		s = s[:len(s)-3]
+	}
+
+	result = append([]string{s}, result...)
+	return n, strings.Join(result, ".")
 }
 
 func convertGoldNameDOJI(s string) string {
