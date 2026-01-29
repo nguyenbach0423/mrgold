@@ -59,11 +59,11 @@ func (c *Crawler) Crawl() {
 	go c.crawlPNJ()
 	go c.crawlBTMC()
 	go c.crawlBTMH()
-	go c.crawlSJCV2()
-	go c.crawlDOJIV2()
-	go c.crawlPNJV2()
-	go c.crawlBTMCV2()
-	go c.crawlBTMHV2()
+	// go c.crawlSJCV2()
+	// go c.crawlDOJIV2()
+	// go c.crawlPNJV2()
+	// go c.crawlBTMCV2()
+	// go c.crawlBTMHV2()
 }
 
 func (c *Crawler) crawlSJC() {
@@ -641,6 +641,8 @@ func (c *Crawler) crawlBTMC() {
 		),
 	)
 
+	log.Info().Bool("ok", ok).Interface("resp", resp.Log()).Send()
+	
 	if ok {
 		doc, err := goquery.NewDocumentFromReader(bytes.NewReader(resp.Body))
 		if err != nil {
