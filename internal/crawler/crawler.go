@@ -2,6 +2,7 @@ package crawler
 
 import (
 	"bytes"
+	"fmt"
 	"database/sql"
 	"encoding/json"
 	"errors"
