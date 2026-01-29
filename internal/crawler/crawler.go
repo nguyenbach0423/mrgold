@@ -640,8 +640,6 @@ func (c *Crawler) crawlBTMC() {
 			httpclient.WithHeaders(httpclient.DefaultHeaders),
 		),
 	)
-
-	log.Info().Bool("ok", ok).Interface("resp", resp.Log()).Send()
 	
 	if ok {
 		doc, err := goquery.NewDocumentFromReader(bytes.NewReader(resp.Body))
