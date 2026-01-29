@@ -37,7 +37,7 @@ func main() {
 	}
 
 	httpClient := httpclient.NewClient(
-		httpclient.WithTimeout(5*time.Second),
+		httpclient.WithTimeout(30*time.Second),
 		httpclient.WithRetryConfig(&httpclient.RetryConfig{
 			MaxRetries: 3,
 			Backoff:    200 * time.Millisecond,
