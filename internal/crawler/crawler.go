@@ -715,6 +715,8 @@ func (c *Crawler) crawlBTMC() {
 
 		t, _ := time.Parse("02/01/2006 15:04", updatedAt)
 
+		fmt.Println(golds)
+		
 		c.store.SetBoard("btmc", &store.GoldPriceBoard{
 			BrandName: "Bảo Tín Minh Châu",
 			Golds:     golds,
